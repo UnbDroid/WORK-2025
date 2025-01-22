@@ -75,6 +75,7 @@ Para dúvidas ou informações adicionais, entre em contato com os membros da eq
 <table>
   <tr>
     <td align="center"><a href="https://github.com/BiancaPatrocinio7"><img style="border-radius: 50%;" src="https://github.com/BiancaPatrocinio7.png" width="190;" alt=""/><br /><sub><b>Bianca Patrocínio</b></sub></a><br /><a href="Link git" title="Rocketseat"></a></td>
+    <td align="center"><a href="https://github.com/CaioHabibe"><img style="border-radius: 50%;" src="https://github.com/CaioHabibe.png" width="190;" alt=""/><br /><sub><b>Caio Habibe</b></sub></a><br /><a href="Link git" title="a"></a></td>
 
   </tr>
 </table>
