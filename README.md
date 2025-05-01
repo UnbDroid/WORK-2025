@@ -1,10 +1,10 @@
-# Projeto Robô Work 2025 - Competição Brasileira de Robótica (CBR)
+# Projeto Robô Work 2025 - Competição Brasileira de Robótica (CBR) ✨
 
 Este repositório contém os códigos e a documentação do **Robô Work 2025**, desenvolvido para participar da categoria **RoboCup@Work** na Competição Brasileira de Robótica (CBR). Este projeto explora o uso de robôs autônomos para realizar tarefas de automação industrial, como manipulação e transporte de objetos em um ambiente simulado.
 
 ---
 
-## Objetivo
+## Objetivo 📜
 
 Desenvolver e programar um robô autônomo capaz de executar com precisão as seguintes tarefas em um ambiente industrial simulado:
 
@@ -14,7 +14,7 @@ Desenvolver e programar um robô autônomo capaz de executar com precisão as se
 
 ---
 
-## Sobre a Competição
+## Sobre a Competição 📗
 
 A categoria **RoboCup@Work** desafia equipes a desenvolverem robôs industriais para ambientes simulados de fábricas e armazéns. As principais características incluem:
 
@@ -31,7 +31,7 @@ A categoria **RoboCup@Work** desafia equipes a desenvolverem robôs industriais 
 
 ---
 
-## Estrutura do Projeto (Possíveis mudanças a serem feitas)
+## Estrutura do Projeto 🛠 (Possíveis mudanças a serem feitas)
 
 - **Robô**:
   - Base móvel com rodas e manipulador integrado.
@@ -42,7 +42,7 @@ A categoria **RoboCup@Work** desafia equipes a desenvolverem robôs industriais 
 
 ---
 
-## Tecnologias Utilizadas (Possíveis mudanças a serem feitas)
+## Tecnologias Utilizadas 💻🎇 (Possíveis mudanças a serem feitas)
 
 - **Linguagens de Programação**: Python e C++.
 - **Frameworks**:
@@ -55,7 +55,7 @@ A categoria **RoboCup@Work** desafia equipes a desenvolverem robôs industriais 
 
 ---
 
-## Instruções de Uso
+## Instruções de Uso 📚
 
 1. **Configuração do Ambiente**:
    - Configure o ambiente de desenvolvimento com as dependências descritas no arquivo `requirements.txt`.
@@ -68,17 +68,65 @@ A categoria **RoboCup@Work** desafia equipes a desenvolverem robôs industriais 
 
 ---
 
-## Contato (Adicionar demais membros)
+## Contato 📬💼
 
 Para dúvidas ou informações adicionais, entre em contato com os membros da equipe responsável:
 <div align = "center">
-<table>
-  <tr>
-    <td align="center"><a href="https://github.com/BiancaPatrocinio7"><img style="border-radius: 50%;" src="https://github.com/BiancaPatrocinio7.png" width="190;" alt=""/><br /><sub><b>Bianca Patrocínio</b></sub></a><br /><a href="Link git" title="Rocketseat"></a></td>
-    <td align="center"><a href="https://github.com/CaioHabibe"><img style="border-radius: 50%;" src="https://github.com/CaioHabibe.png" width="190;" alt=""/><br /><sub><b>Caio Habibe</b></sub></a><br /><a href="Link git" title="a"></a></td>
-
-  </tr>
-</table>
-
+  <table>
+    <tr>
+      <td align="center">
+      <a href="https://github.com/BiancaPatrocinio7">
+      <img style="border-radius: 50%;" src="https://github.com/BiancaPatrocinio7.png" width="160;" alt=""/>
+      <br/>
+      <sub><b>Bianca Patrocínio</b></sub></a>
+      <br/>
+      <sub><b>Programação 💻🎮</b></sub></a>
+      <br />
+      <a href="Link git"></a>
+      </td>
+      <td align="center">
+      <a href="https://github.com/CaioHabibe">
+      <img style="border-radius: 50%;" src="https://github.com/CaioHabibe.png" width="160;" alt=""/>
+      <br/>
+      <sub><b>Caio Habibe</b></sub></a>
+      <br/>
+      <sub><b>Programação 💻🎮</b></sub></a>
+      <a href="Link git"></a>
+      </td>
+      <td align="center">
+      <a href="https://github.com/lucca-aguilar">
+      <img style="border-radius: 50%;" src="https://github.com/lucca-aguilar.png" width="160;" alt=""/>
+      <br/>
+      <sub><b>Lucca Aguilar</b></sub></a>
+      <br/>
+      <sub><b>Programação 💻🎮</b></sub></a>
+      <a href="Link git"></a>
+      </td>
+      <td align="center">
+      <a href="https://github.com/DaniellAbreu">
+      <img style="border-radius: 50%;" src="https://github.com/DaniellAbreu.png" width="160;" alt=""/>
+      <br/>
+      <sub><b>Daniel Abreu</b></sub></a>
+      <br/>
+      <sub><b>Mecânica ⚙🛠</b></sub></a>
+      <a href="Link git"></a>
+      <td align="center">
+      <a href="https://github.com/natileal22">
+      <img style="border-radius: 50%;" src="https://github.com/natileal22.png" width="160;" alt=""/>
+      <br/>
+      <sub><b>Natália Leal</b></sub></a>
+      <br/>
+      <sub><b>Mecânica/Eletrônica ⚙⚡</b></sub></a>
+      <a href="Link git"></a>
+      <td align="center">
+      <a href="https://github.com/GuilhermeAchilles">
+      <img style="border-radius: 50%;" src="https://github.com/GuilhermeAchilles.png" width="160;" alt=""/>
+      <br/>
+      <sub><b>Guilherme Achilles</b></sub></a>
+      <br/>
+      <sub><b>Eletrônica 🔌⚡</b></sub></a>
+      <a href="Link git"></a>
+      </td>
+    </tr>
+  </table>
 </div>
-
