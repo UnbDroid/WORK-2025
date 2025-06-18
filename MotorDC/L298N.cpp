@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-// Código para Controle PID Provisório dos Motores DC pelo Driver L298N.
+// Código para Controle PWM Provisório dos Motores DC pelo Driver L298N.
 
 #define ENCA 14 // Fio Amarelo.
 #define ENCB 12 // Fio Branco.
@@ -20,11 +20,6 @@
 #define PWM_RESOLUTION 8  // Resolução de 8 bits (0, 255).
 
 volatile int32_t position = 0;
-
-int32_t prevTime = 0;
-float ePrev = 0;
-float eIntegral = 0;
-
 static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
 void IRAM_ATTR handleChannelA(){
@@ -109,35 +104,23 @@ void MotorDC(int speedPercentage, const int pwmChannel, const int in1, const int
 }
 
 void loop() {
-  int8_t target = 250*sin(prevTime/1e6);
-  
-  // Constates PID.
-  float kp = 1;
-  float kd = 0.025;
-  float ki = 0.0;
-
-  // Obtenção da Variação do Tempo Transcorrido.
-  int32_t currentTime = micros();
-  float deltaTime = ((float) (currentTime - prevTime))/( 1.0e6 );
-  prevTime = currentTime;
-
-  int32_t encoderReading = 0;
+  int32_t reading = 0;
 
   portENTER_CRITICAL(&mux);
-    encoderReading = position;
+    reading = position;
   portEXIT_CRITICAL(&mux);
+  
+  Serial.println(reading);
+  delay(100);
 
-  int e = encoderReading - target;
-  float eDerivative = (e-ePrev)/(deltaTime);
-  eIntegral = eIntegral + e*deltaTime;
-
-  float controlSignal = kp*e + kd*eDerivative + ki*eIntegral;
-
-  MotorDC(controlSignal, PWM_CHANNEL_B, IN3, IN4);
-  ePrev = e;
-
-  Serial.print(target);
-  Serial.print(" ");
-  Serial.print(encoderReading);
-  Serial.println();
+  MotorDC(20, PWM_CHANNEL_B, IN3, IN4);
+  delay(1000);
+  MotorDC(-30, PWM_CHANNEL_B, IN3, IN4);
+  delay(2000);
+  MotorDC(50, PWM_CHANNEL_B, IN3, IN4);
+  delay(2000);
+  MotorDC(10, PWM_CHANNEL_B, IN3, IN4);
+  delay(2000);
+  MotorDC(0, PWM_CHANNEL_B, IN3, IN4);
+  delay(5000);
 }
