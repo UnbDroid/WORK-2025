@@ -1,134 +1,109 @@
 #include <Arduino.h>
 #include "MotorDC.h"
-#include "PinConfig.h"
 
-// Código utilizado para a leitura de Encoder Magnético do Motor DC utilizando o Driver BTS7960.
+// --- Pinos ---
+#define ENCA 22 // Fio Amarelo do Encoder
+#define ENCB 23 // Fio Branco do Encoder
+#define RPWM_PIN 14 // PWM para girar para frente
+#define LPWM_PIN 25 // PWM para girar para trás
 
-#define ENCA 25 // Fio Amarelo.
-#define ENCB 26 // Fio Branco.
-#define READ_ENCA ((GPIO.in >> ENCA) & 0x1)
-#define READ_ENCB ((GPIO.in >> ENCB) & 0x1)
-#define RPWM_PIN 22
-#define LPWM_PIN 23
+// --- Canais e Configurações do PWM ---
+const ledc_channel_t RPWM_CHANNEL = LEDC_CHANNEL_0;
+const ledc_channel_t LPWM_CHANNEL = LEDC_CHANNEL_1;
+#define PWM_FREQ 10000      // 10 kHz
+#define PWM_RESOLUTION 16   // 16 bits (0-65535)
 
-// Canal PWM para cada saída.
-#define RPWM_CHANNEL 0
-#define LPWM_CHANNEL 1
-
-// Configurações PWM.
-#define PWM_FREQ 10000      // 10 kHz, ideal para motores.
-#define PWM_RESOLUTION 16    // 16 bits → 0–65.535.
-
-volatile int64_t position = 0;
-
-// Constantes PID.
+// --- Constantes do Controlador PID (Ajuste estes valores para otimizar) ---
 const float kp = 1.2;
 const float kd = 0.025;
 const float ki = 0.001;
 
-// Valores PID.
+// =================================================================
+// --- VARIÁVEIS GLOBAIS ---
+// =================================================================
+
+// --- Objeto do Motor ---
+// O construtor desta classe já configura os pinos, canais e o PWM para nós.
+MotorDC motorDC(RPWM_PIN, LPWM_PIN, RPWM_CHANNEL, LPWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+
+// --- Variáveis do Encoder ---
+volatile int64_t position = 0;
+static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
+
+// --- Variáveis do PID ---
 uint64_t prevTime = 0;
 float ePrev = 0;
 float eIntegral = 0;
 
-static portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED;
 
 void IRAM_ATTR handleChannelA(){
-    bool a = READ_ENCA; // Leitura Direta do Pino GPIO - É possível usar também digitalRead().
-    bool b = READ_ENCB;
-
+    bool a = digitalRead(ENCA);
+    bool b = digitalRead(ENCB);
     portENTER_CRITICAL_ISR(&mux);
-    if (a == b) {
-        position++;
-    }
-    else {
-        position--;
-    }
+    if (a == b) { position++; } else { position--; }
     portEXIT_CRITICAL_ISR(&mux);
 }
 
 void IRAM_ATTR handleChannelB(){
-    bool a = READ_ENCA;
-    bool b = READ_ENCB;
-
+    bool a = digitalRead(ENCA);
+    bool b = digitalRead(ENCB);
     portENTER_CRITICAL_ISR(&mux);
-    if (a != b) {
-        position++;
-    }
-    else {
-        position--;
-    }
+    if (a != b) { position++; } else { position--; }
     portEXIT_CRITICAL_ISR(&mux);
 }
 
-void MotorDC(int speedPercent) {
-    speedPercent = constrain(speedPercent, -100, 100);
-    int pwmValue = map(abs(speedPercent), 0, 100, 0, 65535);
-
-    if (speedPercent > 0) {
-        // Move para Frente (Horário - Testar).
-        ledcWrite(RPWM_CHANNEL, pwmValue);
-        ledcWrite(LPWM_CHANNEL, 0);
-    } 
-    else if (speedPercent < 0) {
-        // Move para Trás (Anti-Horário - Testar).
-        ledcWrite(RPWM_CHANNEL, 0);
-        ledcWrite(LPWM_CHANNEL, pwmValue);
-    } 
-    else {
-        // Parada: Não envia PWM para o Motor.
-        ledcWrite(RPWM_CHANNEL, 0);
-        ledcWrite(LPWM_CHANNEL, 0);
-    }
-}
-
 void setup() {
-    Serial.begin(115200); // Se atentar ao BAUD RATE: 115200 para Depuração.
+    Serial.begin(115200);
+
+    // Configura os pinos do encoder como entrada
     pinMode(ENCA, INPUT);
     pinMode(ENCB, INPUT);
     
+    // Anexa as interrupções aos pinos do encoder
     attachInterrupt(digitalPinToInterrupt(ENCA), handleChannelA, CHANGE);
     attachInterrupt(digitalPinToInterrupt(ENCB), handleChannelB, CHANGE);
 
-    // Configura os canais PWM.
-    ledcSetup(RPWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-    ledcSetup(LPWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-
-    // Anexa os pinos aos canais PWM.
-    ledcAttachPin(RPWM_PIN, RPWM_CHANNEL);
-    ledcAttachPin(LPWM_PIN, LPWM_CHANNEL);
-
-    // Operação das portas da ponte H estarão sempre em HIGH (Pinos Soldados).
+    // NÃO PRECISAMOS MAIS CONFIGURAR O PWM AQUI!
+    // O construtor do objeto motorDC já fez todo o trabalho pesado.
+    
+    Serial.println("Setup concluído. Iniciando controle PID de posição...");
+    prevTime = micros(); // Inicializa o contador de tempo do PID
 }
 
+// =================================================================
+// --- LOOP PRINCIPAL ---
+// =================================================================
+
 void loop() {
+    // --- 1. Definir o Alvo (Target) ---
+    // O alvo é uma posição que varia suavemente ao longo do tempo (onda seno)
     float t = micros() / 1e6;
-    float frequency = 0.5; // Increase this to make it oscillate faster
+    float frequency = 0.5; // Frequência da oscilação em Hz
     float target = 2500.0 * sin(2 * PI * frequency * t);
     
-    // Obtenção da Variação do Tempo Transcorrido.
-    uint64_t currentTime = micros();
-    float deltaTime = ((float) (currentTime - prevTime))/( 1.0e6 );
-    prevTime = currentTime;
-    
-    int64_t encoderReading = 0;
-
+    // --- 2. Ler a Posição Atual ---
+    // Lê a variável 'position' que é atualizada pelas interrupções
+    int64_t encoderReading;
     portENTER_CRITICAL(&mux);
-        encoderReading = position;
+    encoderReading = position;
     portEXIT_CRITICAL(&mux);
 
-    int64_t targetInt = (int64_t) target;
-    int e = encoderReading - targetInt;
-    float eDerivative = (e-ePrev)/(deltaTime);
-    eIntegral = eIntegral + e*deltaTime;
-  
-    // Sinal de Controle.
-    float controlSignal = kp*e + kd*eDerivative + ki*eIntegral;
+    // --- 3. Calcular o Sinal de Controle PID ---
+    uint64_t currentTime = micros();
+    float deltaTime = ((float) (currentTime - prevTime)) / 1.0e6;
+    prevTime = currentTime;
     
-    controlSignal = constrain(controlSignal, -100, 100);
-    MotorDC(controlSignal);
+    int e = encoderReading - (int64_t)target;
+    eIntegral += e * deltaTime;
+    float eDerivative = (e - ePrev) / deltaTime;
     ePrev = e;
+  
+    float controlSignal = kp * e + kd * eDerivative + ki * eIntegral;
+    
+    motorDC.setSpeed(controlSignal);
 
-    Serial.printf("Target: %d, Encoder: %ld, Control: %.2f\n", target, encoderReading, controlSignal);
-    delay(10);
+
+    Serial.printf("Alvo: %.2f, Encoder: %lld, Controle: %.2f\n", target, encoderReading, controlSignal);
+    
+    delay(40);
 }
