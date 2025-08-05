@@ -1,7 +1,0 @@
-.pio/
-.vscode/
-*.pyc
-__pycache__/
-.env
-.DS_Store
-*.swp
