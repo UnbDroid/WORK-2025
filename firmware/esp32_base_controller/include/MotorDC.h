@@ -7,7 +7,7 @@
 class MotorDC {
 public:
     // Construtor
-    MotorDC(int pin_r_pwm, int pin_l_pwm, ledc_channel_t channel_r, ledc_channel_t channel_l, int freq, int resolution);
+    MotorDC(int pin_r_pwm, int pin_l_pwm, ledc_channel_t channel_r, ledc_channel_t channel_l, int pin_enca, int pin_encb);
 
     // Configura as interrupções do encoder
     void setupEncoder(void (*isr_a)(), void (*isr_b)());

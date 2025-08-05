@@ -1,7 +1,8 @@
 #include "MotorDC.h"
+#include "config.h"
 
 // O construtor agora é responsável apenas por configurar o hardware do PWM
-MotorDC::MotorDC(int pin_r_pwm, int pin_l_pwm, ledc_channel_t channel_r, ledc_channel_t channel_l, int freq, int resolution) {
+MotorDC::MotorDC(int pin_r_pwm, int pin_l_pwm, ledc_channel_t channel_r, ledc_channel_t channel_l, int pin_enca, int pin_encb) {
     // Guarda os pinos e canais internamente
     this->R_PWM_PIN = pin_r_pwm;
     this->L_PWM_PIN = pin_l_pwm;
@@ -11,8 +12,8 @@ MotorDC::MotorDC(int pin_r_pwm, int pin_l_pwm, ledc_channel_t channel_r, ledc_ch
     this->PIN_ENCB = pin_encb;
 
     // Configura os canais PWM
-    ledcSetup(this->R_PWM_CHANNEL, freq, resolution);
-    ledcSetup(this->L_PWM_CHANNEL, freq, resolution);
+    ledcSetup(this->R_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+    ledcSetup(this->L_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
 
     // Anexa os pinos aos canais configurados
     ledcAttachPin(this->R_PWM_PIN, this->R_PWM_CHANNEL);

@@ -57,3 +57,8 @@ void loop() {
 
     Serial.println("\n6. Teste: GIRAR SENTIDO ANTI-HORÁRIO\n");
     executeMove(0, 0, TEST_SPEED_ANGULAR, MOVE_DURATION);
+    executeMove(0, 0, 0, STOP_DURATION); 
+
+    Serial.println("\n--- FIM DA SEQUÊNCIA DE TESTES ---\n");
+    delay(5000);
+}
