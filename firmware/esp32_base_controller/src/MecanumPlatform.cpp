@@ -25,11 +25,12 @@ void IRAM_ATTR isr_m4b() { if(motor4_ptr) motor4_ptr->position += (digitalRead(M
 
 // O construtor inicializa cada MotorDC
 MecanumPlatform::MecanumPlatform() :
-    motor1(M1_RPWM_PIN, M1_LPWM_PIN, M1_R_CHANNEL, M1_L_CHANNEL, M1_ENCA_PIN, M1_ENCB_PIN),
-    motor2(M2_RPWM_PIN, M2_LPWM_PIN, M2_R_CHANNEL, M2_L_CHANNEL, M2_ENCA_PIN, M2_ENCB_PIN),
-    motor3(M3_RPWM_PIN, M3_LPWM_PIN, M3_R_CHANNEL, M3_L_CHANNEL, M3_ENCA_PIN, M3_ENCB_PIN),
-    motor4(M4_RPWM_PIN, M4_LPWM_PIN, M4_R_CHANNEL, M4_L_CHANNEL, M4_ENCA_PIN, M4_ENCB_PIN)
-{}
+    motor1(M1_INPUT_1_PIN, M1_INPUT_2_PIN, M1_PWM_PIN, M1_PWM_CHANNEL, M1_ENCA_PIN, M1_ENCB_PIN),
+    motor2(M2_INPUT_1_PIN, M2_INPUT_2_PIN, M2_PWM_PIN, M2_PWM_CHANNEL, M2_ENCA_PIN, M2_ENCB_PIN),
+    motor3(M3_INPUT_1_PIN, M3_INPUT_2_PIN, M3_PWM_PIN, M3_PWM_CHANNEL, M3_ENCA_PIN, M3_ENCB_PIN),
+    motor4(M4_INPUT_1_PIN, M4_INPUT_2_PIN, M4_PWM_PIN, M4_PWM_CHANNEL, M4_ENCA_PIN, M4_ENCB_PIN)
+{
+}
 
 void MecanumPlatform::setup() {
     // Ponteiros globais
@@ -50,8 +51,8 @@ void MecanumPlatform::setSpeed(float linear_x, float linear_y, float angular_z) 
     // Calcula a velocidade alvo para cada roda em rad/s
     float w1 = (1 / WHEEL_RADIUS) * (linear_x - linear_y - (LX + LY) * angular_z);
     float w2 = (1 / WHEEL_RADIUS) * (linear_x + linear_y + (LX + LY) * angular_z);
-    float w3 = (1 / WHEEL_RADIUS) * (linear_x + linear_y - (LX + LY) * angular_z);
-    float w4 = (1 / WHEEL_RADIUS) * (linear_x - linear_y + (LX + LY) * angular_z);
+    float w3 = (1 / WHEEL_RADIUS) * (linear_x - linear_y + (LX + LY) * angular_z);
+    float w4 = (1 / WHEEL_RADIUS) * (linear_x + linear_y - (LX + LY) * angular_z);
 
     motor1.setTargetSpeed(w1);
     motor2.setTargetSpeed(w2);
