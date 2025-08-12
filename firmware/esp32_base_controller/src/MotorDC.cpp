@@ -2,22 +2,19 @@
 #include "config.h"
 
 // O construtor agora é responsável apenas por configurar o hardware do PWM
-MotorDC::MotorDC(int pin_r_pwm, int pin_l_pwm, ledc_channel_t channel_r, ledc_channel_t channel_l, int pin_enca, int pin_encb) {
+MotorDC::MotorDC(int input_1_pin, int input_2_pin, int pwm_pin, ledc_channel_t pwm_channel, int pin_enca, int pin_encb) {
     // Guarda os pinos e canais internamente
-    this->R_PWM_PIN = pin_r_pwm;
-    this->L_PWM_PIN = pin_l_pwm;
-    this->R_PWM_CHANNEL = channel_r;
-    this->L_PWM_CHANNEL = channel_l;
+    this->INPUT_1_PIN = input_1_pin;
+    this->INPUT_2_PIN = input_2_pin;
+    this->PWM_CHANNEL = pwm_channel;
     this->PIN_ENCA = pin_enca;
     this->PIN_ENCB = pin_encb;
 
     // Configura os canais PWM
-    ledcSetup(this->R_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-    ledcSetup(this->L_PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+    ledcSetup(this->PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
 
     // Anexa os pinos aos canais configurados
-    ledcAttachPin(this->R_PWM_PIN, this->R_PWM_CHANNEL);
-    ledcAttachPin(this->L_PWM_PIN, this->L_PWM_CHANNEL);
+    ledcAttachPin(this->PWM_PIN, this->PWM_CHANNEL);
 }
 
 void MotorDC::setupEncoder(void (*isr_a)(), void (*isr_b)()) {
@@ -78,13 +75,14 @@ void MotorDC::setSpeedPercent(int speedPercent) {
     uint32_t pwmValue = map(abs(speedPercent), 0, 100, 0, 65535);
 
     if (speedPercent > 0) {
-        ledcWrite(this->R_PWM_CHANNEL, pwmValue);
-        ledcWrite(this->L_PWM_CHANNEL, 0);
+        digitalWrite(this->INPUT_1_PIN, HIGH);
+        digitalWrite(this->INPUT_2_PIN, LOW);
+        ledcWrite(this->PWM_CHANNEL, pwmValue);
     } else if (speedPercent < 0) {
-        ledcWrite(this->R_PWM_CHANNEL, 0);
-        ledcWrite(this->L_PWM_CHANNEL, pwmValue);
+        digitalWrite(this->INPUT_1_PIN, LOW);
+        digitalWrite(this->INPUT_2_PIN, HIGH);
+        ledcWrite(this->PWM_CHANNEL, pwmValue);
     } else {
-        ledcWrite(this->R_PWM_CHANNEL, 0);
-        ledcWrite(this->L_PWM_CHANNEL, 0);
+        ledcWrite(this->PWM_CHANNEL, 0);
     }
 }

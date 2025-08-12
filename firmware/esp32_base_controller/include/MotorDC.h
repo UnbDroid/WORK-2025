@@ -7,7 +7,7 @@
 class MotorDC {
 public:
     // Construtor
-    MotorDC(int pin_r_pwm, int pin_l_pwm, ledc_channel_t channel_r, ledc_channel_t channel_l, int pin_enca, int pin_encb);
+    MotorDC(int input_1_pin, int input_2_pin, int pwm_pin, ledc_channel_t pwm_channel, int pin_enca, int pin_encb);
 
     // Configura as interrupções do encoder
     void setupEncoder(void (*isr_a)(), void (*isr_b)());
@@ -25,10 +25,10 @@ private:
     void setSpeedPercent(int speedPercent);
 
     // Variáveis internas da classe
-    int R_PWM_PIN;
-    int L_PWM_PIN;
-    ledc_channel_t R_PWM_CHANNEL;
-    ledc_channel_t L_PWM_CHANNEL;
+    int INPUT_1_PIN; // Mexe para a direita
+    int INPUT_2_PIN; // Mexe para a esquerda
+    int PWM_PIN;
+    ledc_channel_t PWM_CHANNEL;
     int PIN_ENCA;
     int PIN_ENCB;
 
