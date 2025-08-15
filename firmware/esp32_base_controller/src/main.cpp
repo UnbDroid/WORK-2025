@@ -1,64 +1,90 @@
 #include <Arduino.h>
 #include "MecanumPlatform.h" 
 
-MecanumPlatform platform;
+// --- Pinos de Controle do Motor no Driver L298N ---
+// Renomeei os pinos para maior clareza com o padrão do L298N 
 
-// Parâmetros para testes
-const float TEST_SPEED_LINEAR = 0.3; 
-const float TEST_SPEED_ANGULAR = 1.0; 
-const int MOVE_DURATION = 2000;
-const int STOP_DURATION = 1000;
+//M1
+#define ENA_PIN 4// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
+#define IN1_PIN 17 // Pino de direção 1, conectado ao IN1 ou IN3
+#define IN2_PIN 16 // Pino de direção 2, conectado ao IN2 ou IN4
 
-// Função auxiliar para executar um movimento
-void executeMove(float vx, float vy, float wz, int duration_ms) {
-    Serial.printf("Comando: vx=%.2f, vy=%.2f, wz=%.2f\n", vx, vy, wz);
-    
-    platform.setSpeed(vx, vy, wz);
+//M4
+#define ENA_PIN1 13// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
+#define IN1_PIN1 14 // Pino de direção 1, conectado ao IN1 ou IN3
+#define IN2_PIN1 12 // Pino de direção 2, conectado ao IN2 ou IN4
 
+// M3
+#define ENA_PIN2 15// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
+#define IN1_PIN2 26 // Pino de direção 1, conectado ao IN1 ou IN3
+#define IN2_PIN2 27 // Pino de direção 2, conectado ao IN2 ou IN4
 
-    unsigned long startTime = millis();
-    while (millis() - startTime < duration_ms) {
-        platform.update();
-        delay(5); 
-    }
-}
+// M2
+#define ENA_PIN3 2// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
+#define IN1_PIN3 25 // Pino de direção 1, conectado ao IN1 ou IN3
+#define IN2_PIN3 33 // Pino de direção 2, conectado ao IN2 ou IN4
+
+// --- Configurações do PWM (LEDC) ---
+#define PWM_FREQUENCY 10000 // Frequência do PWM em Hz
+#define PWM_CHANNEL    0      // Canal LEDC a ser usado (0-15)
+#define PWM_CHANNEL1   1     // Canal LEDC a ser usado (0-15)
+#define PWM_CHANNEL2   2     // Canal LEDC a ser usado (0-15)
+#define PWM_CHANNEL3   3     // Canal LEDC a ser usado (0-15)
+#define PWM_RESOLUTION 8   // Resolução em bits (8 bits = 0-255)
 
 void setup() {
-    Serial.begin(115200);
-    Serial.println("\nINICIANDO TESTE DE MOVIMENTAÇÃO\n");
+  // Configura os pinos de direção como saída
+  pinMode(IN1_PIN, OUTPUT);
+  pinMode(IN2_PIN, OUTPUT);
 
-    platform.setup();
+  pinMode(IN1_PIN1, OUTPUT);
+  pinMode(IN2_PIN1, OUTPUT);
 
-    Serial.println("Setup completo. Robô pronto para iniciar a sequência de testes em 5 segundos...\n");
-    delay(5000);
+  pinMode(IN1_PIN2, OUTPUT);
+  pinMode(IN2_PIN2, OUTPUT);
+
+  pinMode(IN1_PIN3, OUTPUT);
+  pinMode(IN2_PIN3, OUTPUT);
+
+  // --- Configuração do sistema LEDC para o controle de velocidade (PWM) ---
+  // 1. Configura o canal PWM com frequência e resolução
+  ledcSetup(PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcSetup(PWM_CHANNEL1, PWM_FREQUENCY, PWM_RESOLUTION);
+
+  // 2. Anexa o pino ENA ao canal PWM configurado
+  ledcAttachPin(ENA_PIN, PWM_CHANNEL);
+  ledcAttachPin(ENA_PIN1, PWM_CHANNEL1);
+
+  ledcSetup(PWM_CHANNEL2, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcSetup(PWM_CHANNEL3, PWM_FREQUENCY, PWM_RESOLUTION);
+
+  // 2. Anexa o pino ENA ao canal PWM configurado
+  ledcAttachPin(ENA_PIN2, PWM_CHANNEL2);
+  ledcAttachPin(ENA_PIN3, PWM_CHANNEL3);
 }
 
 void loop() {
+  Serial.begin(115200); // Inicia a comunicação serial para debug (opcional)
 
-    Serial.println("\n1. Teste: ANDAR PARA FRENTE\n");
-    executeMove(TEST_SPEED_LINEAR, 0, 0, MOVE_DURATION);
-    executeMove(0, 0, 0, STOP_DURATION); 
+  // --- Teste 1: Girar para Frente com Velocidade Máxima ---
+  Serial.println("Girando para frente...");
+  digitalWrite(IN1_PIN, HIGH);
+  digitalWrite(IN2_PIN, LOW);
+  ledcWrite(PWM_CHANNEL, 200); // Velocidade máxima (2^8 - 1)
 
-    Serial.println("\n2. Teste: ANDAR PARA TRÁS\n");
-    executeMove(-TEST_SPEED_LINEAR, 0, 0, MOVE_DURATION);
-    executeMove(0, 0, 0, STOP_DURATION); 
+  digitalWrite(IN1_PIN1, HIGH);
+  digitalWrite(IN2_PIN1, LOW);
+  ledcWrite(PWM_CHANNEL1, 200); // Velocidade máxima (2^8 - 1)
 
-    Serial.println("\n3. Teste: DESLIZAR PARA A DIREITA (STRAFE)\n");
-    executeMove(0, -TEST_SPEED_LINEAR, 0, MOVE_DURATION); 
-    executeMove(0, 0, 0, STOP_DURATION); 
 
-    Serial.println("\n4. Teste: DESLIZAR PARA A ESQUERDA (STRAFE)\n");
-    executeMove(0, TEST_SPEED_LINEAR, 0, MOVE_DURATION); 
-    executeMove(0, 0, 0, STOP_DURATION); 
+  digitalWrite(IN1_PIN2, HIGH);
+  digitalWrite(IN2_PIN2, LOW);
+  ledcWrite(PWM_CHANNEL2, 200); // Velocidade máxima (2^8 - 1)
+   
+  digitalWrite(IN1_PIN3, HIGH);
+  digitalWrite(IN2_PIN3, LOW);
+  ledcWrite(PWM_CHANNEL3, 200); // Velocidade máxima (2^8 - 1)*/
 
-    Serial.println("\n5. Teste: GIRAR SENTIDO HORÁRIO\n");
-    executeMove(0, 0, -TEST_SPEED_ANGULAR, MOVE_DURATION);
-    executeMove(0, 0, 0, STOP_DURATION); 
+  delay(3000);
 
-    Serial.println("\n6. Teste: GIRAR SENTIDO ANTI-HORÁRIO\n");
-    executeMove(0, 0, TEST_SPEED_ANGULAR, MOVE_DURATION);
-    executeMove(0, 0, 0, STOP_DURATION); 
-
-    Serial.println("\n--- FIM DA SEQUÊNCIA DE TESTES ---\n");
-    delay(5000);
 }
