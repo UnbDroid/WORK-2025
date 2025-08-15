@@ -4,14 +4,14 @@
 // O construtor agora é responsável apenas por configurar o hardware do PWM
 MotorDC::MotorDC(int input_1_pin, int input_2_pin, int pwm_pin, ledc_channel_t pwm_channel, int pin_enca, int pin_encb) {
     // Guarda os pinos e canais internamente
-    this->INPUT_1_PIN = input_1_pin;
+    this->INPUT_1_PIN = input_1_pin;    
     this->INPUT_2_PIN = input_2_pin;
     this->PWM_CHANNEL = pwm_channel;
     this->PIN_ENCA = pin_enca;
     this->PIN_ENCB = pin_encb;
 
     // Configura os canais PWM
-    ledcSetup(this->PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+    ledcSetup(this->PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
 
     // Anexa os pinos aos canais configurados
     ledcAttachPin(this->PWM_PIN, this->PWM_CHANNEL);
@@ -72,7 +72,7 @@ void MotorDC::updatePID() {
 // Método de baixo nível para correção de velociadde
 void MotorDC::setSpeedPercent(int speedPercent) {
     speedPercent = constrain(speedPercent, -100, 100);
-    uint32_t pwmValue = map(abs(speedPercent), 0, 100, 0, 65535);
+    uint32_t pwmValue = map(abs(speedPercent), 0, 100, 0, 255);
 
     if (speedPercent > 0) {
         digitalWrite(this->INPUT_1_PIN, HIGH);

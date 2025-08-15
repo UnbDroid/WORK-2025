@@ -10,27 +10,27 @@ namespace {
 }
 
 // Funções de interrupção
-void IRAM_ATTR isr_m1a() { if(motor1_ptr) motor1_ptr->position += (digitalRead(M1_ENCA_PIN) == digitalRead(M1_ENCB_PIN)) ? 1 : -1; }
-void IRAM_ATTR isr_m1b() { if(motor1_ptr) motor1_ptr->position += (digitalRead(M1_ENCA_PIN) != digitalRead(M1_ENCB_PIN)) ? 1 : -1; }
+void IRAM_ATTR isr_m1a() { if(motor1_ptr) motor1_ptr->position += (digitalRead(M1_ENCODER_A_PIN) == digitalRead(M1_ENCODER_B_PIN)) ? 1 : -1; }
+void IRAM_ATTR isr_m1b() { if(motor1_ptr) motor1_ptr->position += (digitalRead(M1_ENCODER_A_PIN) != digitalRead(M1_ENCODER_B_PIN)) ? 1 : -1; }
 
-void IRAM_ATTR isr_m2a() { if(motor2_ptr) motor2_ptr->position += (digitalRead(M2_ENCA_PIN) == digitalRead(M2_ENCB_PIN)) ? 1 : -1; }
-void IRAM_ATTR isr_m2b() { if(motor2_ptr) motor2_ptr->position += (digitalRead(M2_ENCA_PIN) != digitalRead(M2_ENCB_PIN)) ? 1 : -1; }
+void IRAM_ATTR isr_m2a() { if(motor2_ptr) motor2_ptr->position += (digitalRead(M2_ENCODER_A_PIN) == digitalRead(M2_ENCODER_B_PIN)) ? 1 : -1; }
+void IRAM_ATTR isr_m2b() { if(motor2_ptr) motor2_ptr->position += (digitalRead(M2_ENCODER_A_PIN) != digitalRead(M2_ENCODER_B_PIN)) ? 1 : -1; }
 
-void IRAM_ATTR isr_m3a() { if(motor3_ptr) motor3_ptr->position += (digitalRead(M3_ENCA_PIN) == digitalRead(M3_ENCB_PIN)) ? 1 : -1; }
-void IRAM_ATTR isr_m3b() { if(motor3_ptr) motor3_ptr->position += (digitalRead(M3_ENCA_PIN) != digitalRead(M3_ENCB_PIN)) ? 1 : -1; }
+void IRAM_ATTR isr_m3a() { if(motor3_ptr) motor3_ptr->position += (digitalRead(M3_ENCODER_A_PIN) == digitalRead(M3_ENCODER_B_PIN)) ? 1 : -1; }
+void IRAM_ATTR isr_m3b() { if(motor3_ptr) motor3_ptr->position += (digitalRead(M3_ENCODER_A_PIN) != digitalRead(M3_ENCODER_B_PIN)) ? 1 : -1; }
 
-void IRAM_ATTR isr_m4a() { if(motor4_ptr) motor4_ptr->position += (digitalRead(M4_ENCA_PIN) == digitalRead(M4_ENCB_PIN)) ? 1 : -1; }
-void IRAM_ATTR isr_m4b() { if(motor4_ptr) motor4_ptr->position += (digitalRead(M4_ENCA_PIN) != digitalRead(M4_ENCB_PIN)) ? 1 : -1; }
+void IRAM_ATTR isr_m4a() { if(motor4_ptr) motor4_ptr->position += (digitalRead(M4_ENCODER_A_PIN) == digitalRead(M4_ENCODER_B_PIN)) ? 1 : -1; }
+void IRAM_ATTR isr_m4b() { if(motor4_ptr) motor4_ptr->position += (digitalRead(M4_ENCODER_A_PIN) != digitalRead(M4_ENCODER_B_PIN)) ? 1 : -1; }
 
 
 // O construtor inicializa cada MotorDC
+
 MecanumPlatform::MecanumPlatform() :
-    motor1(M1_INPUT_1_PIN, M1_INPUT_2_PIN, M1_PWM_PIN, M1_PWM_CHANNEL, M1_ENCA_PIN, M1_ENCB_PIN),
-    motor2(M2_INPUT_1_PIN, M2_INPUT_2_PIN, M2_PWM_PIN, M2_PWM_CHANNEL, M2_ENCA_PIN, M2_ENCB_PIN),
-    motor3(M3_INPUT_1_PIN, M3_INPUT_2_PIN, M3_PWM_PIN, M3_PWM_CHANNEL, M3_ENCA_PIN, M3_ENCB_PIN),
-    motor4(M4_INPUT_1_PIN, M4_INPUT_2_PIN, M4_PWM_PIN, M4_PWM_CHANNEL, M4_ENCA_PIN, M4_ENCB_PIN)
-{
-}
+    motor1(M1_IN1_PIN, M1_IN2_PIN, M1_PWM_PIN, static_cast<ledc_channel_t>(M1_PWM_CHANNEL), M1_ENCODER_A_PIN, M1_ENCODER_B_PIN),
+    motor2(M2_IN1_PIN, M2_IN2_PIN, M2_PWM_PIN, static_cast<ledc_channel_t>(M2_PWM_CHANNEL), M2_ENCODER_A_PIN, M2_ENCODER_B_PIN),
+    motor3(M3_IN1_PIN, M3_IN2_PIN, M3_PWM_PIN, static_cast<ledc_channel_t>(M3_PWM_CHANNEL), M3_ENCODER_A_PIN, M3_ENCODER_B_PIN),
+    motor4(M4_IN1_PIN, M4_IN2_PIN, M4_PWM_PIN, static_cast<ledc_channel_t>(M4_PWM_CHANNEL), M4_ENCODER_A_PIN, M4_ENCODER_B_PIN)
+{ }
 
 void MecanumPlatform::setup() {
     // Ponteiros globais

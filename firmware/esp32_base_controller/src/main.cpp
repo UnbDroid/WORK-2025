@@ -1,90 +1,115 @@
 #include <Arduino.h>
-#include "MecanumPlatform.h" 
+#include "config.h"
 
-// --- Pinos de Controle do Motor no Driver L298N ---
-// Renomeei os pinos para maior clareza com o padrão do L298N 
+const int PULSOS_POR_REVOLUCAO = 1440; 
 
-//M1
-#define ENA_PIN 4// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
-#define IN1_PIN 17 // Pino de direção 1, conectado ao IN1 ou IN3
-#define IN2_PIN 16 // Pino de direção 2, conectado ao IN2 ou IN4
+// ===================================================================
 
-//M4
-#define ENA_PIN1 13// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
-#define IN1_PIN1 14 // Pino de direção 1, conectado ao IN1 ou IN3
-#define IN2_PIN1 12 // Pino de direção 2, conectado ao IN2 ou IN4
+// --- Variáveis Globais ---
 
-// M3
-#define ENA_PIN2 15// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
-#define IN1_PIN2 26 // Pino de direção 1, conectado ao IN1 ou IN3
-#define IN2_PIN2 27 // Pino de direção 2, conectado ao IN2 ou IN4
+// Variável para contar os pulsos do encoder.
+// "volatile" é crucial para que a variável seja compartilhada de forma segura
+// entre a rotina de interrupção e o loop principal.
+volatile long encoderPulsos = 0;
 
-// M2
-#define ENA_PIN3 2// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
-#define IN1_PIN3 25 // Pino de direção 1, conectado ao IN1 ou IN3
-#define IN2_PIN3 33 // Pino de direção 2, conectado ao IN2 ou IN4
+// Constantes para cálculo
+const float DOIS_PI = 2.0 * PI;
 
-// --- Configurações do PWM (LEDC) ---
-#define PWM_FREQUENCY 10000 // Frequência do PWM em Hz
-#define PWM_CHANNEL    0      // Canal LEDC a ser usado (0-15)
-#define PWM_CHANNEL1   1     // Canal LEDC a ser usado (0-15)
-#define PWM_CHANNEL2   2     // Canal LEDC a ser usado (0-15)
-#define PWM_CHANNEL3   3     // Canal LEDC a ser usado (0-15)
-#define PWM_RESOLUTION 8   // Resolução em bits (8 bits = 0-255)
+// --- Variáveis para o Cálculo de Velocidade ---
+long pulsoAnterior = 0;
+unsigned long tempoAnterior = 0;
+const int intervaloCalculo = 100; // Calcular a velocidade a cada 100 ms
+
+// ===================================================================
+// === ROTINA DE SERVIÇO DE INTERRUPÇÃO (ISR) ===
+// ===================================================================
+// Esta função é chamada AUTOMATICAMENTE pelo hardware da ESP32
+// toda vez que o pino M1_ENCODER_A_PIN muda de LOW para HIGH (RISING).
+// Deve ser o mais RÁPIDA e CURTA possível.
+void IRAM_ATTR contarPulsoISR() {
+  encoderPulsos++;
+}
+// ===================================================================
+
+/**
+ * @brief Controla a potência e direção de um motor DC.
+ * @param power A potência desejada, de -100 (ré máxima) a 100 (frente máxima).
+ */
+void setMotorPower(int power) {
+  power = constrain(power, -100, 100);
+
+  if (power > 0) {
+    digitalWrite(M1_IN1_PIN, HIGH);
+    digitalWrite(M1_IN2_PIN, LOW);
+  } else if (power < 0) {
+    digitalWrite(M1_IN1_PIN, LOW);
+    digitalWrite(M2_IN2_PIN, HIGH);
+  } else {
+    digitalWrite(M1_IN1_PIN, LOW);
+    digitalWrite(M2_IN2_PIN, LOW);
+  }
+  uint32_t pwmValue = map(abs(power), 0, 100, 0, 255);
+  ledcWrite(M1_PWM_CHANNEL, pwmValue);
+}
+
 
 void setup() {
-  // Configura os pinos de direção como saída
-  pinMode(IN1_PIN, OUTPUT);
-  pinMode(IN2_PIN, OUTPUT);
+  Serial.begin(115200);
+  Serial.println("Iniciando Leitura de Encoder e Cálculo de Velocidade (rad/s)");
 
-  pinMode(IN1_PIN1, OUTPUT);
-  pinMode(IN2_PIN1, OUTPUT);
+  // --- Configuração dos Pinos ---
+  pinMode(M1_IN1_PIN, OUTPUT);
+  pinMode(M2_IN2_PIN, OUTPUT);
+  pinMode(M1_ENCODER_A_PIN, INPUT_PULLUP); // INPUT_PULLUP é bom se o encoder for de coletor aberto
 
-  pinMode(IN1_PIN2, OUTPUT);
-  pinMode(IN2_PIN2, OUTPUT);
+  // --- Configuração do PWM (LEDC) ---
+  ledcSetup(M1_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttachPin(M1_PWM_PIN, M1_PWM_CHANNEL);
 
-  pinMode(IN1_PIN3, OUTPUT);
-  pinMode(IN2_PIN3, OUTPUT);
+  // --- Configuração da Interrupção ---
+  // Anexa a função 'contarPulsoISR' ao pino do encoder.
+  // Ela será acionada na borda de subida (RISING) do sinal.
+  attachInterrupt(digitalPinToInterrupt(M1_ENCODER_A_PIN), contarPulsoISR, RISING);
 
-  // --- Configuração do sistema LEDC para o controle de velocidade (PWM) ---
-  // 1. Configura o canal PWM com frequência e resolução
-  ledcSetup(PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
-  ledcSetup(PWM_CHANNEL1, PWM_FREQUENCY, PWM_RESOLUTION);
-
-  // 2. Anexa o pino ENA ao canal PWM configurado
-  ledcAttachPin(ENA_PIN, PWM_CHANNEL);
-  ledcAttachPin(ENA_PIN1, PWM_CHANNEL1);
-
-  ledcSetup(PWM_CHANNEL2, PWM_FREQUENCY, PWM_RESOLUTION);
-  ledcSetup(PWM_CHANNEL3, PWM_FREQUENCY, PWM_RESOLUTION);
-
-  // 2. Anexa o pino ENA ao canal PWM configurado
-  ledcAttachPin(ENA_PIN2, PWM_CHANNEL2);
-  ledcAttachPin(ENA_PIN3, PWM_CHANNEL3);
+  tempoAnterior = millis();
 }
 
 void loop() {
-  Serial.begin(115200); // Inicia a comunicação serial para debug (opcional)
+  // --- Bloco de Cálculo de Velocidade (não bloqueante) ---
+  if (millis() - tempoAnterior >= intervaloCalculo) {
+    
+    // 1. Lê e reinicia o contador de pulsos de forma segura
+    // Desabilitar interrupções temporariamente garante que não vamos ler
+    // o valor de 'encoderPulsos' enquanto a ISR está tentando modificá-lo.
+    noInterrupts();
+    long pulsosNoIntervalo = encoderPulsos;
+    encoderPulsos = 0;
+    interrupts();
 
-  // --- Teste 1: Girar para Frente com Velocidade Máxima ---
-  Serial.println("Girando para frente...");
-  digitalWrite(IN1_PIN, HIGH);
-  digitalWrite(IN2_PIN, LOW);
-  ledcWrite(PWM_CHANNEL, 200); // Velocidade máxima (2^8 - 1)
+    // 2. Calcula o tempo decorrido em segundos
+    float deltaTempo_s = (millis() - tempoAnterior) / 1000.0;
+    
+    // 3. Calcula as revoluções no intervalo
+    float revolucoes = (float)pulsosNoIntervalo / PULSOS_POR_REVOLUCAO;
+    
+    // 4. Calcula a velocidade angular em rad/s
+    // Fórmula: (revoluções * 2 * PI) / tempo_em_segundos
+    float velocidade_rad_s = (revolucoes * DOIS_PI) / deltaTempo_s;
 
-  digitalWrite(IN1_PIN1, HIGH);
-  digitalWrite(IN2_PIN1, LOW);
-  ledcWrite(PWM_CHANNEL1, 200); // Velocidade máxima (2^8 - 1)
+    // 5. Imprime o resultado
+    Serial.print("Pulsos contados: ");
+    Serial.print(pulsosNoIntervalo);
+    Serial.print(" | Velocidade: ");
+    Serial.print(velocidade_rad_s);
+    Serial.println(" rad/s");
 
+    // Atualiza o tempo para o próximo cálculo
+    tempoAnterior = millis();
+  }
 
-  digitalWrite(IN1_PIN2, HIGH);
-  digitalWrite(IN2_PIN2, LOW);
-  ledcWrite(PWM_CHANNEL2, 200); // Velocidade máxima (2^8 - 1)
-   
-  digitalWrite(IN1_PIN3, HIGH);
-  digitalWrite(IN2_PIN3, LOW);
-  ledcWrite(PWM_CHANNEL3, 200); // Velocidade máxima (2^8 - 1)*/
-
-  delay(3000);
-
+  // --- Bloco de Teste do Motor ---
+  // Para este exemplo, vamos apenas ligar o motor com uma potência fixa.
+  // Em um sistema PID, a velocidade calculada acima seria a "Entrada" (Input) do PID,
+  // e a função setMotorPower seria chamada com a "Saída" (Output) do PID.
+  setMotorPower(100); // Liga o motor com 50% da potência
 }
