@@ -1,7 +1,7 @@
 #ifndef BRACO_SERVO_H
 #define BRACO_SERVO_H
 
-#include <ESP32Servo.h>
+#include <Servo.h>
 #include <math.h>
 
 class BracoServo {
@@ -24,8 +24,8 @@ private:
     float _L1, _L2;
     int _anguloAtualOmbro, _anguloAtualCotovelo, _anguloAtualGarra;
 
-    const int GARRA_ABERTA = 70;
-    const int GARRA_FECHADA = 0;
+    const int GARRA_ABERTA = 0;
+    const int GARRA_FECHADA = 70;
     const int VELOCIDADE_MOVIMENTO = 15;
 
     bool calcular_cinematica_inversa(float r, float z, int& anguloOmbro, int& anguloCotovelo);

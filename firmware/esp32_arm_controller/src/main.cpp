@@ -12,6 +12,8 @@
 #define COMPRIMENTO_L1   19.0
 #define COMPRIMENTO_L2   24.0
 
+// O pino do motor de passo e do ombro estão repetidos, acho que precisa corrigir
+
 // --- Cria os objetos (ALTERADO) ---
 // Atualiza a criação do objeto 'braco' para passar os dois pinos do ombro
 BracoServo braco(PINO_OMBRO_1, PINO_OMBRO_2, PINO_COTOVELO, PINO_GARRA, COMPRIMENTO_L1, COMPRIMENTO_L2);
