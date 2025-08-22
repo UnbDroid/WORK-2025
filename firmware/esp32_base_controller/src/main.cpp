@@ -1,64 +1,93 @@
 #include <Arduino.h>
-#include "MecanumPlatform.h" 
+#include "config.h"
 
-MecanumPlatform platform;
+const int PULSOS_POR_REVOLUCAO = 1440; 
 
-// Parâmetros para testes
-const float TEST_SPEED_LINEAR = 0.3; 
-const float TEST_SPEED_ANGULAR = 1.0; 
-const int MOVE_DURATION = 2000;
-const int STOP_DURATION = 1000;
+// ===================================================================
 
-// Função auxiliar para executar um movimento
-void executeMove(float vx, float vy, float wz, int duration_ms) {
-    Serial.printf("Comando: vx=%.2f, vy=%.2f, wz=%.2f\n", vx, vy, wz);
-    
-    platform.setSpeed(vx, vy, wz);
+// --- Variáveis Globais ---
+
+// Variável para contar os pulsos do encoder.
+// "volatile" é crucial para que a variável seja compartilhada de forma segura
+// entre a rotina de interrupção e o loop principal.
+volatile long encoderPulsos = 0;
+
+// Constantes para cálculo
+const float DOIS_PI = 2.0 * PI;
+
+// --- Variáveis para o Cálculo de Velocidade ---
+long pulsoAnterior = 0;
+unsigned long tempoAnterior = 0;
+const int intervaloCalculo = 100; // Calcular a velocidade a cada 100 ms
 
 
-    unsigned long startTime = millis();
-    while (millis() - startTime < duration_ms) {
-        platform.update();
-        delay(5); 
-    }
+void IRAM_ATTR contarPulsoISR() {
+  encoderPulsos++;
 }
 
+void setMotorPower(int power) {
+  power = constrain(power, -100, 100);
+
+  if (power > 0) {
+    digitalWrite(M1_IN1_PIN, HIGH);
+    digitalWrite(M1_IN2_PIN, LOW);
+  } else if (power < 0) {
+    digitalWrite(M1_IN1_PIN, LOW);
+    digitalWrite(M2_IN2_PIN, HIGH);
+  } else {
+    digitalWrite(M1_IN1_PIN, LOW);
+    digitalWrite(M2_IN2_PIN, LOW);
+  }
+  uint32_t pwmValue = map(abs(power), 0, 100, 0, 255);
+  ledcWrite(M1_PWM_CHANNEL, pwmValue);
+}
+
+
 void setup() {
-    Serial.begin(115200);
-    Serial.println("\nINICIANDO TESTE DE MOVIMENTAÇÃO\n");
+  Serial.begin(115200);
+  Serial.println("Iniciando Leitura de Encoder e Cálculo de Velocidade (rad/s)");
 
-    platform.setup();
+  // --- Configuração dos Pinos ---
+  pinMode(M1_IN1_PIN, OUTPUT);
+  pinMode(M2_IN2_PIN, OUTPUT);
+  pinMode(M1_ENCODER_A_PIN, INPUT_PULLUP); // INPUT_PULLUP é bom se o encoder for de coletor aberto
 
-    Serial.println("Setup completo. Robô pronto para iniciar a sequência de testes em 5 segundos...\n");
-    delay(5000);
+  // --- Configuração do PWM (LEDC) ---
+  ledcSetup(M1_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+  ledcAttachPin(M1_PWM_PIN, M1_PWM_CHANNEL);
+
+  attachInterrupt(digitalPinToInterrupt(M1_ENCODER_A_PIN), contarPulsoISR, RISING);
+
+  tempoAnterior = millis();
 }
 
 void loop() {
+  if (millis() - tempoAnterior >= intervaloCalculo) {
+    
+    // 1. Lê e reinicia o contador de pulsos de forma segura
+    noInterrupts();
+    long pulsosNoIntervalo = encoderPulsos;
+    encoderPulsos = 0;
+    interrupts();
 
-    Serial.println("\n1. Teste: ANDAR PARA FRENTE\n");
-    executeMove(TEST_SPEED_LINEAR, 0, 0, MOVE_DURATION);
-    executeMove(0, 0, 0, STOP_DURATION); 
+    // 2. Calcula o tempo decorrido em segundos
+    float deltaTempo_s = (millis() - tempoAnterior) / 1000.0;
+    
+    // 3. Calcula as revoluções no intervalo
+    float revolucoes = (float)pulsosNoIntervalo / PULSOS_POR_REVOLUCAO;
+    
+    // 4. Calcula a velocidade angular em rad/s
+    // Fórmula: (revoluções * 2 * PI) / tempo_em_segundos
+    float velocidade_rad_s = (revolucoes * DOIS_PI) / deltaTempo_s;
 
-    Serial.println("\n2. Teste: ANDAR PARA TRÁS\n");
-    executeMove(-TEST_SPEED_LINEAR, 0, 0, MOVE_DURATION);
-    executeMove(0, 0, 0, STOP_DURATION); 
+    // 5. Imprime o resultado
+    Serial.print("Pulsos contados: ");
+    Serial.print(pulsosNoIntervalo);
+    Serial.print(" | Velocidade: ");
+    Serial.print(velocidade_rad_s);
+    Serial.println(" rad/s");
 
-    Serial.println("\n3. Teste: DESLIZAR PARA A DIREITA (STRAFE)\n");
-    executeMove(0, -TEST_SPEED_LINEAR, 0, MOVE_DURATION); 
-    executeMove(0, 0, 0, STOP_DURATION); 
-
-    Serial.println("\n4. Teste: DESLIZAR PARA A ESQUERDA (STRAFE)\n");
-    executeMove(0, TEST_SPEED_LINEAR, 0, MOVE_DURATION); 
-    executeMove(0, 0, 0, STOP_DURATION); 
-
-    Serial.println("\n5. Teste: GIRAR SENTIDO HORÁRIO\n");
-    executeMove(0, 0, -TEST_SPEED_ANGULAR, MOVE_DURATION);
-    executeMove(0, 0, 0, STOP_DURATION); 
-
-    Serial.println("\n6. Teste: GIRAR SENTIDO ANTI-HORÁRIO\n");
-    executeMove(0, 0, TEST_SPEED_ANGULAR, MOVE_DURATION);
-    executeMove(0, 0, 0, STOP_DURATION); 
-
-    Serial.println("\n--- FIM DA SEQUÊNCIA DE TESTES ---\n");
-    delay(5000);
+    tempoAnterior = millis();
+  }
+  setMotorPower(100); 
 }

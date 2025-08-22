@@ -4,24 +4,55 @@
 // O construtor agora é responsável apenas por configurar o hardware do PWM
 MotorDC::MotorDC(int input_1_pin, int input_2_pin, int pwm_pin, ledc_channel_t pwm_channel, int pin_enca, int pin_encb) {
     // Guarda os pinos e canais internamente
-    this->INPUT_1_PIN = input_1_pin;
+    this->INPUT_1_PIN = input_1_pin;    
     this->INPUT_2_PIN = input_2_pin;
+    this->PWM_PIN = pwm_pin; // tinha esquecido de inicializar o pino de PWM
     this->PWM_CHANNEL = pwm_channel;
     this->PIN_ENCA = pin_enca;
     this->PIN_ENCB = pin_encb;
 
+    pinMode(this->INPUT_1_PIN, OUTPUT);
+    pinMode(this->INPUT_2_PIN, OUTPUT);
+
     // Configura os canais PWM
-    ledcSetup(this->PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
+    ledcSetup(this->PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
 
     // Anexa os pinos aos canais configurados
     ledcAttachPin(this->PWM_PIN, this->PWM_CHANNEL);
 }
 
-void MotorDC::setupEncoder(void (*isr_a)(), void (*isr_b)()) {
+void MotorDC::readEncoder() {
+    int state_a = digitalRead(this->PIN_ENCA);
+
+    if(this->pin_a_last_state == LOW && state_a == HIGH){
+        int state_b = digitalRead(this->PIN_ENCB);
+
+        if(state_b == LOW) {
+            this->direction = true; // gira pra frente
+        } else {
+            this->direction = false; // gira pra trás
+        }
+    }
+
+    this->pin_a_last_state = state_a;
+
+    if(this->direction) {
+        this->position++;
+    } else {
+        this->position--;
+    }
+}
+
+void MotorDC::setupEncoder(void (*isr)()) {
+    // pinos como entrada
     pinMode(this->PIN_ENCA, INPUT_PULLUP);
     pinMode(this->PIN_ENCB, INPUT_PULLUP);
-    attachInterrupt(digitalPinToInterrupt(this->PIN_ENCA), isr_a, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(this->PIN_ENCB), isr_b, CHANGE);
+
+    // interrupções para encoder pino A
+    attachInterrupt(digitalPinToInterrupt(this->PIN_ENCA), isr, CHANGE);
+    
+    this->pin_a_last_state = digitalRead(this->PIN_ENCA);
+
     this->prev_time = micros();
 }
 
@@ -72,7 +103,7 @@ void MotorDC::updatePID() {
 // Método de baixo nível para correção de velociadde
 void MotorDC::setSpeedPercent(int speedPercent) {
     speedPercent = constrain(speedPercent, -100, 100);
-    uint32_t pwmValue = map(abs(speedPercent), 0, 100, 0, 65535);
+    uint32_t pwmValue = map(abs(speedPercent), 0, 100, 0, 255);
 
     if (speedPercent > 0) {
         digitalWrite(this->INPUT_1_PIN, HIGH);
