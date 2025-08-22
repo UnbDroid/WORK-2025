@@ -10,18 +10,10 @@ namespace {
 }
 
 // Funções de interrupção
-void IRAM_ATTR isr_m1a() { if(motor1_ptr) motor1_ptr->position += (digitalRead(M1_ENCODER_A_PIN) == digitalRead(M1_ENCODER_B_PIN)) ? 1 : -1; }
-void IRAM_ATTR isr_m1b() { if(motor1_ptr) motor1_ptr->position += (digitalRead(M1_ENCODER_A_PIN) != digitalRead(M1_ENCODER_B_PIN)) ? 1 : -1; }
-
-void IRAM_ATTR isr_m2a() { if(motor2_ptr) motor2_ptr->position += (digitalRead(M2_ENCODER_A_PIN) == digitalRead(M2_ENCODER_B_PIN)) ? 1 : -1; }
-void IRAM_ATTR isr_m2b() { if(motor2_ptr) motor2_ptr->position += (digitalRead(M2_ENCODER_A_PIN) != digitalRead(M2_ENCODER_B_PIN)) ? 1 : -1; }
-
-void IRAM_ATTR isr_m3a() { if(motor3_ptr) motor3_ptr->position += (digitalRead(M3_ENCODER_A_PIN) == digitalRead(M3_ENCODER_B_PIN)) ? 1 : -1; }
-void IRAM_ATTR isr_m3b() { if(motor3_ptr) motor3_ptr->position += (digitalRead(M3_ENCODER_A_PIN) != digitalRead(M3_ENCODER_B_PIN)) ? 1 : -1; }
-
-void IRAM_ATTR isr_m4a() { if(motor4_ptr) motor4_ptr->position += (digitalRead(M4_ENCODER_A_PIN) == digitalRead(M4_ENCODER_B_PIN)) ? 1 : -1; }
-void IRAM_ATTR isr_m4b() { if(motor4_ptr) motor4_ptr->position += (digitalRead(M4_ENCODER_A_PIN) != digitalRead(M4_ENCODER_B_PIN)) ? 1 : -1; }
-
+void IRAM_ATTR isr_m1a() { if(motor1_ptr) motor1_ptr->readEncoder(); }
+void IRAM_ATTR isr_m2a() { if(motor2_ptr) motor2_ptr->readEncoder(); }
+void IRAM_ATTR isr_m3a() { if(motor3_ptr) motor3_ptr->readEncoder(); }
+void IRAM_ATTR isr_m4a() { if(motor4_ptr) motor4_ptr->readEncoder(); }
 
 // O construtor inicializa cada MotorDC
 
@@ -40,10 +32,10 @@ void MecanumPlatform::setup() {
     motor4_ptr = &motor4;
 
     // Configuração do encoder para cada MotorDC
-    motor1.setupEncoder(isr_m1a, isr_m1b);
-    motor2.setupEncoder(isr_m2a, isr_m2b);
-    motor3.setupEncoder(isr_m3a, isr_m3b);
-    motor4.setupEncoder(isr_m4a, isr_m4b);
+    motor1.setupEncoder(isr_m1a);
+    motor2.setupEncoder(isr_m2a);
+    motor3.setupEncoder(isr_m3a);
+    motor4.setupEncoder(isr_m4a);
 }
 
 // Cinemática inversa

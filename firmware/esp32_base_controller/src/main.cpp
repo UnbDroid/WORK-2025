@@ -20,21 +20,11 @@ long pulsoAnterior = 0;
 unsigned long tempoAnterior = 0;
 const int intervaloCalculo = 100; // Calcular a velocidade a cada 100 ms
 
-// ===================================================================
-// === ROTINA DE SERVIÇO DE INTERRUPÇÃO (ISR) ===
-// ===================================================================
-// Esta função é chamada AUTOMATICAMENTE pelo hardware da ESP32
-// toda vez que o pino M1_ENCODER_A_PIN muda de LOW para HIGH (RISING).
-// Deve ser o mais RÁPIDA e CURTA possível.
+
 void IRAM_ATTR contarPulsoISR() {
   encoderPulsos++;
 }
-// ===================================================================
 
-/**
- * @brief Controla a potência e direção de um motor DC.
- * @param power A potência desejada, de -100 (ré máxima) a 100 (frente máxima).
- */
 void setMotorPower(int power) {
   power = constrain(power, -100, 100);
 
@@ -66,21 +56,15 @@ void setup() {
   ledcSetup(M1_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(M1_PWM_PIN, M1_PWM_CHANNEL);
 
-  // --- Configuração da Interrupção ---
-  // Anexa a função 'contarPulsoISR' ao pino do encoder.
-  // Ela será acionada na borda de subida (RISING) do sinal.
   attachInterrupt(digitalPinToInterrupt(M1_ENCODER_A_PIN), contarPulsoISR, RISING);
 
   tempoAnterior = millis();
 }
 
 void loop() {
-  // --- Bloco de Cálculo de Velocidade (não bloqueante) ---
   if (millis() - tempoAnterior >= intervaloCalculo) {
     
     // 1. Lê e reinicia o contador de pulsos de forma segura
-    // Desabilitar interrupções temporariamente garante que não vamos ler
-    // o valor de 'encoderPulsos' enquanto a ISR está tentando modificá-lo.
     noInterrupts();
     long pulsosNoIntervalo = encoderPulsos;
     encoderPulsos = 0;
@@ -103,13 +87,7 @@ void loop() {
     Serial.print(velocidade_rad_s);
     Serial.println(" rad/s");
 
-    // Atualiza o tempo para o próximo cálculo
     tempoAnterior = millis();
   }
-
-  // --- Bloco de Teste do Motor ---
-  // Para este exemplo, vamos apenas ligar o motor com uma potência fixa.
-  // Em um sistema PID, a velocidade calculada acima seria a "Entrada" (Input) do PID,
-  // e a função setMotorPower seria chamada com a "Saída" (Output) do PID.
-  setMotorPower(100); // Liga o motor com 50% da potência
+  setMotorPower(100); 
 }
