@@ -1,93 +1,96 @@
 #include <Arduino.h>
 #include "config.h"
 
-const int PULSOS_POR_REVOLUCAO = 1440; 
+const int PULSOS_POR_REVOLUCAO = 1440;
+const float DIAMETRO_RODA_CM = 8;
+const float CIRCUNFERENCIA_CM = PI * DIAMETRO_RODA_CM;
+const float DISTANCIA_CM = 30.0;
 
-// ===================================================================
+const long PULSOS_ALVO = (DISTANCIA_CM / CIRCUNFERENCIA_CM) * PULSOS_POR_REVOLUCAO;
 
-// --- Variáveis Globais ---
-
-// Variável para contar os pulsos do encoder.
-// "volatile" é crucial para que a variável seja compartilhada de forma segura
-// entre a rotina de interrupção e o loop principal.
 volatile long encoderPulsos = 0;
 
-// Constantes para cálculo
-const float DOIS_PI = 2.0 * PI;
-
-// --- Variáveis para o Cálculo de Velocidade ---
-long pulsoAnterior = 0;
-unsigned long tempoAnterior = 0;
-const int intervaloCalculo = 100; // Calcular a velocidade a cada 100 ms
-
-
+// ISR usando canal A e B (quadratura)
 void IRAM_ATTR contarPulsoISR() {
-  encoderPulsos++;
+  // Se B == HIGH, sentido 1; se LOW, sentido oposto
+  if (digitalRead(M1_ENCODER_B_PIN) == HIGH) {
+    encoderPulsos++;
+  } else {
+    encoderPulsos--;
+  }
 }
 
+// Liga motor: positivo para frente, negativo para trás
 void setMotorPower(int power) {
-  power = constrain(power, -100, 100);
+  power = constrain(power, -100, 100); 
+  uint32_t pwmValue = map(abs(power), 0, 100, 0, 255);
 
   if (power > 0) {
     digitalWrite(M1_IN1_PIN, HIGH);
     digitalWrite(M1_IN2_PIN, LOW);
   } else if (power < 0) {
     digitalWrite(M1_IN1_PIN, LOW);
-    digitalWrite(M2_IN2_PIN, HIGH);
+    digitalWrite(M1_IN2_PIN, HIGH);
   } else {
     digitalWrite(M1_IN1_PIN, LOW);
-    digitalWrite(M2_IN2_PIN, LOW);
+    digitalWrite(M1_IN2_PIN, LOW);
   }
-  uint32_t pwmValue = map(abs(power), 0, 100, 0, 255);
+
   ledcWrite(M1_PWM_CHANNEL, pwmValue);
 }
 
+void pararMotor() {
+  digitalWrite(M1_IN1_PIN, LOW);
+  digitalWrite(M1_IN2_PIN, LOW);
+  ledcWrite(M1_PWM_CHANNEL, 0);
+}
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("Iniciando Leitura de Encoder e Cálculo de Velocidade (rad/s)");
+  Serial.println("Iniciando ida e volta 30cm cada");
 
-  // --- Configuração dos Pinos ---
   pinMode(M1_IN1_PIN, OUTPUT);
-  pinMode(M2_IN2_PIN, OUTPUT);
-  pinMode(M1_ENCODER_A_PIN, INPUT_PULLUP); // INPUT_PULLUP é bom se o encoder for de coletor aberto
+  pinMode(M1_IN2_PIN, OUTPUT);
+  pinMode(M1_PWM_PIN, OUTPUT);
 
-  // --- Configuração do PWM (LEDC) ---
+  pinMode(M1_ENCODER_A_PIN, INPUT_PULLUP);
+  pinMode(M1_ENCODER_B_PIN, INPUT_PULLUP);
+
   ledcSetup(M1_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
   ledcAttachPin(M1_PWM_PIN, M1_PWM_CHANNEL);
 
-  attachInterrupt(digitalPinToInterrupt(M1_ENCODER_A_PIN), contarPulsoISR, RISING);
-
-  tempoAnterior = millis();
+  // Interrupção no canal A usando CHANGE (mais confiável)
+  attachInterrupt(digitalPinToInterrupt(M1_ENCODER_A_PIN), contarPulsoISR, CHANGE);
 }
 
 void loop() {
-  if (millis() - tempoAnterior >= intervaloCalculo) {
-    
-    // 1. Lê e reinicia o contador de pulsos de forma segura
-    noInterrupts();
-    long pulsosNoIntervalo = encoderPulsos;
-    encoderPulsos = 0;
-    interrupts();
-
-    // 2. Calcula o tempo decorrido em segundos
-    float deltaTempo_s = (millis() - tempoAnterior) / 1000.0;
-    
-    // 3. Calcula as revoluções no intervalo
-    float revolucoes = (float)pulsosNoIntervalo / PULSOS_POR_REVOLUCAO;
-    
-    // 4. Calcula a velocidade angular em rad/s
-    // Fórmula: (revoluções * 2 * PI) / tempo_em_segundos
-    float velocidade_rad_s = (revolucoes * DOIS_PI) / deltaTempo_s;
-
-    // 5. Imprime o resultado
-    Serial.print("Pulsos contados: ");
-    Serial.print(pulsosNoIntervalo);
-    Serial.print(" | Velocidade: ");
-    Serial.print(velocidade_rad_s);
-    Serial.println(" rad/s");
-
-    tempoAnterior = millis();
+  // === Fase 1: Andar 30cm para frente ===
+  encoderPulsos = 0;
+  setMotorPower(70); // frente
+  while (abs(encoderPulsos) < PULSOS_ALVO) {
+    Serial.print("Indo para frente: ");
+    Serial.print(abs(encoderPulsos));
+    Serial.print(" / ");
+    Serial.println(PULSOS_ALVO);
+    delay(100);
   }
-  setMotorPower(100); 
+  pararMotor();
+  Serial.println("Alcançou 30cm à frente");
+  delay(1000);
+
+  // === Fase 2: Voltar 30cm ===
+  encoderPulsos = 0;
+  setMotorPower(-70); // ré
+  while (abs(encoderPulsos) < PULSOS_ALVO) {
+    Serial.print("Voltando: ");
+    Serial.print(abs(encoderPulsos));
+    Serial.print(" / ");
+    Serial.println(PULSOS_ALVO);
+    delay(100);
+  }
+  pararMotor();
+  Serial.println("Voltou 30cm");
+  
+  // Para de vez
+  while (true) delay(1000);
 }
