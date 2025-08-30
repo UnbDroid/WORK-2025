@@ -1,66 +1,62 @@
 #include "MotorDC.h"
 #include "config.h"
 
-// O construtor agora é responsável apenas por configurar o hardware do PWM
-MotorDC::MotorDC(int input_1_pin, int input_2_pin, int pwm_pin, ledc_channel_t pwm_channel, int pin_enca, int pin_encb) {
-    // Guarda os pinos e canais internamente
-    this->INPUT_1_PIN = input_1_pin;    
-    this->INPUT_2_PIN = input_2_pin;
-    this->PWM_PIN = pwm_pin; // tinha esquecido de inicializar o pino de PWM
-    this->PWM_CHANNEL = pwm_channel;
-    this->PIN_ENCA = pin_enca;
-    this->PIN_ENCB = pin_encb;
-
-    pinMode(this->INPUT_1_PIN, OUTPUT);
-    pinMode(this->INPUT_2_PIN, OUTPUT);
-
-    // Configura os canais PWM
-    ledcSetup(this->PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
-
-    // Anexa os pinos aos canais configurados
-    ledcAttachPin(this->PWM_PIN, this->PWM_CHANNEL);
-}
-
-void MotorDC::readEncoder() {
-    int state_a = digitalRead(this->PIN_ENCA);
-
-    if(this->pin_a_last_state == LOW && state_a == HIGH){
-        int state_b = digitalRead(this->PIN_ENCB);
-
-        if(state_b == LOW) {
-            this->direction = true; // gira pra frente
-        } else {
-            this->direction = false; // gira pra trás
-        }
-    }
-
-    this->pin_a_last_state = state_a;
-
-    if(this->direction) {
-        this->position++;
-    } else {
-        this->position--;
-    }
-}
-
-void MotorDC::setupEncoder(void (*isr)()) {
-    // pinos como entrada
-    pinMode(this->PIN_ENCA, INPUT_PULLUP);
-    pinMode(this->PIN_ENCB, INPUT_PULLUP);
-
-    // interrupções para encoder pino A
-    attachInterrupt(digitalPinToInterrupt(this->PIN_ENCA), isr, CHANGE);
+void MotorDC::setupEncoderPNCT(MotorDC *motor) {
+    pcnt_config_t pcnt_config = {}; // Zera a estrutura de configuração
+  
+    // Configura os pinos e canais do PCNT
+    pcnt_config.pulse_gpio_num = this->PIN_ENCA;
+    pcnt_config.ctrl_gpio_num = this->PIN_ENCB;
+    pcnt_config.unit = this->pcnt_unit;
+    pcnt_config.channel = PCNT_CHANNEL_0;
     
-    this->pin_a_last_state = digitalRead(this->PIN_ENCA);
+    // Define como o PCNT deve contar nos eventos de borda
+    pcnt_config.pos_mode = PCNT_COUNT_DEC; // Decrementa na borda de subida de A
+    pcnt_config.neg_mode = PCNT_COUNT_INC; // Incrementa na borda de descida de A
+    pcnt_config.lctrl_mode = PCNT_MODE_REVERSE; // Inverte a contagem baseado no pino B (HIGH)
+    pcnt_config.hctrl_mode = PCNT_MODE_KEEP;    // Mantém a contagem baseado no pino B (LOW)
 
-    this->prev_time = micros();
+    // Inicializa a unidade PCNT
+    pcnt_unit_config(&pcnt_config);
+    
+    // (Opcional) Configura um filtro para ignorar ruídos/glitches de até 10us
+    pcnt_set_filter_value(this->pcnt_unit, 1023);
+    pcnt_filter_enable(this->pcnt_unit);
+    
+    // Zera e inicia o contador
+    pcnt_counter_pause(this->pcnt_unit);
+    pcnt_counter_clear(this->pcnt_unit);
+    pcnt_counter_resume(this->pcnt_unit);
 }
 
 void MotorDC::setTargetSpeed(float rads_per_sec) {
     this->target_speed_rps = rads_per_sec;
 }
 
-void MotorDC::updatePID() {
+void MotorDC::moveMotor(MotorDC* motor, int pwm) {
+    bool forward = pwm < 0;
+
+    if(pwm == 0) {
+        digitalWrite(this->INPUT_1_PIN, LOW);
+        digitalWrite(this->INPUT_2_PIN, LOW);
+    } else {
+        digitalWrite(this->INPUT_1_PIN, forward ? HIGH : LOW);
+        digitalWrite(this->INPUT_2_PIN, forward ? LOW : HIGH);
+    }
+
+    int pwmValue = abs(pwm);
+    if (pwmValue > 255) pwmValue = 255;
+
+    ledcWrite(this->PWM_CHANNEL, pwmValue);
+}
+
+/*void MotorDC::updateEncoder(MotorDC* motor) {
+    unsigned long currentTime = millis();
+
+    if()
+} */
+
+/*void MotorDC::updatePID() {
     // Calcula o tempo decorrido desde a última atualização
     unsigned long current_time = micros();
     float delta_t = (current_time - this->prev_time) / 1.0e6;
@@ -98,7 +94,7 @@ void MotorDC::updatePID() {
     int motor_speed_percent = constrain(pid_output * 20, -100, 100); // Fator para ajuste
 
     setSpeedPercent(motor_speed_percent);
-}
+}*/
 
 // Método de baixo nível para correção de velociadde
 void MotorDC::setSpeedPercent(int speedPercent) {

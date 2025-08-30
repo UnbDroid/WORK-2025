@@ -9,19 +9,13 @@ namespace {
     MotorDC* motor4_ptr = nullptr;
 }
 
-// Funções de interrupção
-void IRAM_ATTR isr_m1a() { if(motor1_ptr) motor1_ptr->readEncoder(); }
-void IRAM_ATTR isr_m2a() { if(motor2_ptr) motor2_ptr->readEncoder(); }
-void IRAM_ATTR isr_m3a() { if(motor3_ptr) motor3_ptr->readEncoder(); }
-void IRAM_ATTR isr_m4a() { if(motor4_ptr) motor4_ptr->readEncoder(); }
-
 // O construtor inicializa cada MotorDC
 
 MecanumPlatform::MecanumPlatform() :
-    motor1(M1_IN1_PIN, M1_IN2_PIN, M1_PWM_PIN, static_cast<ledc_channel_t>(M1_PWM_CHANNEL), M1_ENCODER_A_PIN, M1_ENCODER_B_PIN),
-    motor2(M2_IN1_PIN, M2_IN2_PIN, M2_PWM_PIN, static_cast<ledc_channel_t>(M2_PWM_CHANNEL), M2_ENCODER_A_PIN, M2_ENCODER_B_PIN),
-    motor3(M3_IN1_PIN, M3_IN2_PIN, M3_PWM_PIN, static_cast<ledc_channel_t>(M3_PWM_CHANNEL), M3_ENCODER_A_PIN, M3_ENCODER_B_PIN),
-    motor4(M4_IN1_PIN, M4_IN2_PIN, M4_PWM_PIN, static_cast<ledc_channel_t>(M4_PWM_CHANNEL), M4_ENCODER_A_PIN, M4_ENCODER_B_PIN)
+    motor1(M1_IN1_PIN, M1_IN2_PIN, M1_PWM_PIN, M1_PWM_CHANNEL, M1_ENCODER_A_PIN, M1_ENCODER_B_PIN, M1_PCNT_UNIT),
+    motor2(M2_IN1_PIN, M2_IN2_PIN, M2_PWM_PIN, M2_PWM_CHANNEL, M2_ENCODER_A_PIN, M2_ENCODER_B_PIN, M2_PCNT_UNIT),
+    motor3(M3_IN1_PIN, M3_IN2_PIN, M3_PWM_PIN, M3_PWM_CHANNEL, M3_ENCODER_A_PIN, M3_ENCODER_B_PIN, M3_PCNT_UNIT),
+    motor4(M4_IN1_PIN, M4_IN2_PIN, M4_PWM_PIN, M4_PWM_CHANNEL, M4_ENCODER_A_PIN, M4_ENCODER_B_PIN, M4_PCNT_UNIT)
 { }
 
 void MecanumPlatform::setup() {
@@ -30,12 +24,6 @@ void MecanumPlatform::setup() {
     motor2_ptr = &motor2;
     motor3_ptr = &motor3;
     motor4_ptr = &motor4;
-
-    // Configuração do encoder para cada MotorDC
-    motor1.setupEncoder(isr_m1a);
-    motor2.setupEncoder(isr_m2a);
-    motor3.setupEncoder(isr_m3a);
-    motor4.setupEncoder(isr_m4a);
 }
 
 // Cinemática inversa
@@ -53,9 +41,9 @@ void MecanumPlatform::setSpeed(float linear_x, float linear_y, float angular_z) 
 }
 
 // Chama o update de cada motor.
-void MecanumPlatform::update() {
+/*void MecanumPlatform::update() {
     motor1.updatePID();
     motor2.updatePID();
     motor3.updatePID();
     motor4.updatePID();
-}
+}*/

@@ -13,41 +13,44 @@
 // PINOS DOS MOTORES E ENCODERS //
 
 // Motor 1 (Direito Frontal)
-#define M1_PWM_PIN 4// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
-#define M1_IN1_PIN 1 // Pino de direção 1, conectado ao IN1 ou IN3
-#define M1_IN2_PIN 3 // Pino de direção 2, conectado ao IN2 ou IN4
-#define M1_ENCODER_A_PIN 26 // Pino do encoder A do motor 1
-#define M1_ENCODER_B_PIN 27 // Pino do encoder B do motor 1
+#define M1_PWM_PIN 15 // Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
+#define M1_IN1_PIN 5 // Pino de direção 1, conectado ao IN1 ou IN3
+#define M1_IN2_PIN 18 // Pino de direção 2, conectado ao IN2 ou IN4
+#define M1_ENCODER_A_PIN 32 // Pino do encoder A do motor 1
+#define M1_ENCODER_B_PIN 33 // Pino do encoder B do motor 1
+#define M1_PCNT_UNIT PCNT_UNIT_0
 
 // Motor 2 (Esquerdo Frontal)
-#define M2_PWM_PIN 2// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
-#define M2_IN1_PIN  18// Pino de direção 1, conectado ao IN1 ou IN3
-#define M2_IN2_PIN  19 // Pino de direção 2, conectado ao IN2 ou IN4
+#define M2_PWM_PIN 13 // Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
+#define M2_IN1_PIN  22 // Pino de direção 1, conectado ao IN1 ou IN3
+#define M2_IN2_PIN  23 // Pino de direção 2, conectado ao IN2 ou IN4
 #define M2_ENCODER_A_PIN  25 // Pino do encoder A do motor 2
-#define M2_ENCODER_B_PIN  33// Pino do encoder B do motor 2
+#define M2_ENCODER_B_PIN  26// Pino do encoder B do motor 2
+#define M2_PCNT_UNIT PCNT_UNIT_1
 
 // Motor 3 (Direito Traseiro)
-#define M3_PWM_PIN 16// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
-#define M3_IN1_PIN 9 // Pino de direção 1, conectado ao IN1 ou IN3
-#define M3_IN2_PIN 10 // Pino de direção 2, conectado ao IN2 ou IN4
-#define M3_ENCODER_A_PIN 22 // Pino do encoder A do motor 3
-#define M3_ENCODER_B_PIN 23 // Pino do encoder B do motor 3
+#define M3_PWM_PIN 2 // Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
+#define M3_IN1_PIN 16 // Pino de direção 1, conectado ao IN1 ou IN3
+#define M3_IN2_PIN 17 // Pino de direção 2, conectado ao IN2 ou IN4
+#define M3_ENCODER_A_PIN 34 // Pino do encoder A do motor 3
+#define M3_ENCODER_B_PIN 35 // Pino do encoder B do motor 3
+#define M3_PCNT_UNIT PCNT_UNIT_2
 
 //Motor 4 (Esquerdo Traseiro)
-#define M4_PWM_PIN 13// Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
-#define M4_IN1_PIN 14 // Pino de direção 1, conectado ao IN1 ou IN3
-#define M4_IN2_PIN 12 // Pino de direção 2, conectado ao IN2 ou IN4
-#define M4_ENCODER_A_PIN 32 // Pino do encoder A do motor 4 
-#define M4_ENCODER_B_PIN 35 // Pino do encoder B do motor 4
+#define M4_PWM_PIN 12 // Pino de velocidade (PWM), deve ser conectado ao ENA ou ENB do L298N
+#define M4_IN1_PIN 27 // Pino de direção 1, conectado ao IN1 ou IN3
+#define M4_IN2_PIN 14 // Pino de direção 2, conectado ao IN2 ou IN4
+#define M4_ENCODER_A_PIN 39 // Pino do encoder A do motor 4 
+#define M4_ENCODER_B_PIN 36 // Pino do encoder B do motor 4
+#define M4_PCNT_UNIT PCNT_UNIT_3
 
 // --- Configurações do PWM (LEDC) ---
 #define PWM_FREQUENCY 10000 // Frequência do PWM em Hz
 
-const ledc_channel_t M1_PWM_CHANNEL = LEDC_CHANNEL_0;      // Canal LEDC a ser usado (0-15)
-const ledc_channel_t M2_PWM_CHANNEL = LEDC_CHANNEL_1;      // Canal LEDC a ser usado (0-15)
-const ledc_channel_t M3_PWM_CHANNEL = LEDC_CHANNEL_2;      // Canal LEDC a ser usado (0-15)
-const ledc_channel_t M4_PWM_CHANNEL = LEDC_CHANNEL_3;      // Canal LEDC a ser usado (0-15)
-const ledc_timer_bit_t PWM_RESOLUTION = LEDC_TIMER_8_BIT;  // Resolução em bits (8 bits = 0-255)
+const int M1_PWM_CHANNEL = 0;      // Canal LEDC a ser usado (0-15)
+const int M2_PWM_CHANNEL = 1;      // Canal LEDC a ser usado (0-15)
+const int M3_PWM_CHANNEL = 2;      // Canal LEDC a ser usado (0-15)
+const int M4_PWM_CHANNEL = 3;      // Canal LEDC a ser usado (0-15)
 
 // PID 
 #define KP 1.2
