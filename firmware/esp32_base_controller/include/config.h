@@ -4,9 +4,9 @@
 #include <Arduino.h>
 #include "driver/pcnt.h" // Incluído aqui para o tipo pcnt_unit_t
 
-#define WHEEL_RADIUS 0.04;
-#define LX 0.125;
-#define LY 0.215;
+#define WHEEL_RADIUS 0.040
+#define LX 0.125
+#define LY 0.215
 
 
 const int M1_PWM_CHANNEL = 0;      // Canal LEDC a ser usado (0-15)
@@ -29,7 +29,7 @@ const int M4_PWM_CHANNEL = 3;      // Canal LEDC a ser usado (0-15)
 // Motor 1 (Direito Frontal)
 #define M1_IN1_PIN 5
 #define M1_IN2_PIN 18
-#define M1_PWM_PIN 15
+#define M1_PWM_PIN 19
 #define M1_ENCODER_A_PIN 32
 #define M1_ENCODER_B_PIN 33
 #define M1_PCNT_UNIT PCNT_UNIT_0
