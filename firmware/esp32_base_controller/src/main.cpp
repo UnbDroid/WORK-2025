@@ -1,149 +1,110 @@
 #include <Arduino.h>
-#include "driver/pcnt.h" // Biblioteca para o Pulse Counter (PCNT)
-#include "driver/ledc.h" // Biblioteca para o PWM Controller (LEDC)
-// a4988
+#include "config.h"
+#include "MecanumPlatform.h"
 
-// --- Configurações Gerais ---
-#define PPR_CAIXA_SAIDA 1440.0 // Contagens por revolução do eixo de SAÍDA
-#define RPM_CALC_INTERVAL 200  // Intervalo em ms para calcular e exibir o RPM
-#define NUM_LEITURAS_MEDIA 10  // Quantidade de leituras para a média móvel
+// Cria o objeto principal que representa a nossa plataforma de rodas
+MecanumPlatform plataforma;
 
-// --- Pinos do Motor ---
-#define MOTOR_NOME "Motor"
-#define MOTOR_IN1_PIN 27
-#define MOTOR_IN2_PIN 14
-#define MOTOR_PWM_PIN 12
-#define MOTOR_ENC_A_PIN 39
-#define MOTOR_ENC_B_PIN 36
-#define MOTOR_PWM_CHANNEL 0
-#define MOTOR_PCNT_UNIT PCNT_UNIT_0
+// --- Variáveis para controlar a sequência de teste ---
+unsigned long tempoInicioTeste = 0;
+unsigned long ultimoTempoPrint = 0;
+const int INTERVALO_PRINT_MS = 200; // Imprime o estado a cada 200ms
+const int DURACAO_FASE_MS = 5000;   // Cada fase do teste dura 5 segundos
+int faseTeste = 0;
 
-// --- Variáveis de Estado ---
-int pwmAtivo = 0; // Armazena o último PWM comandado
-double rpmAtual = 0.0;
-double rpmMedio = 0.0;
-double leiturasRpm[NUM_LEITURAS_MEDIA] = {0.0};
-int indiceLeituraRpm = 0;
-int16_t ultimaContagemHardware = 0;
-unsigned long ultimaAtualizacaoRpm = 0;
+// --- Função para imprimir o estado de todos os motores ---
+void printMotorStatus() {
+    // Fator para converter rad/s para RPM (para facilitar a leitura)
+    const float RADS_PARA_RPM = 9.5492965855;
 
-// Função para definir a direção e velocidade do motor
-void moverMotor(int velocidade) {
-  bool paraFrente = velocidade > 0;
-  
-  if (velocidade == 0) {
-    digitalWrite(MOTOR_IN1_PIN, LOW);
-    digitalWrite(MOTOR_IN2_PIN, LOW);
-  } else {
-    digitalWrite(MOTOR_IN1_PIN, paraFrente ? HIGH : LOW);
-    digitalWrite(MOTOR_IN2_PIN, paraFrente ? LOW : HIGH);
-  }
-  
-  int pwmValue = abs(velocidade);
-  if (pwmValue > 255) pwmValue = 255;
-  
-  ledcWrite(MOTOR_PWM_CHANNEL, pwmValue);
+    // Limpa a tela para uma visualização mais limpa (funciona no Monitor Serial do Arduino IDE 2.x e PlatformIO)
+    Serial.print("\033[2J\033[H"); 
+    Serial.println("----------- STATUS DOS MOTORES -----------");
+    Serial.println("Motor | Alvo (RPM) | Atual (RPM) | Pulsos Totais");
+    Serial.println("--------------------------------------------");
+
+    char buffer[100];
+    
+    // Imprime dados para cada motor
+    sprintf(buffer, " M1   | %-10.2f | %-11.2f | %lld", 
+            plataforma.motor1.getTargetSpeedRPS() * RADS_PARA_RPM, 
+            plataforma.motor1.rpm, 
+            plataforma.motor1.totalPulseCount);
+    Serial.println(buffer);
+
+    sprintf(buffer, " M2   | %-10.2f | %-11.2f | %lld", 
+            plataforma.motor2.getTargetSpeedRPS() * RADS_PARA_RPM, 
+            plataforma.motor2.rpm, 
+            plataforma.motor2.totalPulseCount);
+    Serial.println(buffer);
+
+    sprintf(buffer, " M3   | %-10.2f | %-11.2f | %lld", 
+            plataforma.motor3.getTargetSpeedRPS() * RADS_PARA_RPM, 
+            plataforma.motor3.rpm, 
+            plataforma.motor3.totalPulseCount);
+    Serial.println(buffer);
+
+    sprintf(buffer, " M4   | %-10.2f | %-11.2f | %lld", 
+            plataforma.motor4.getTargetSpeedRPS() * RADS_PARA_RPM, 
+            plataforma.motor4.rpm, 
+            plataforma.motor4.totalPulseCount);
+    Serial.println(buffer);
+    Serial.println("--------------------------------------------");
 }
 
-// Função para zerar o histórico da média móvel
-void zerarMediaMovel() {
-  Serial.println("--- Novo PWM detectado. Zerando a média móvel. ---");
-  for (int i = 0; i < NUM_LEITURAS_MEDIA; i++) {
-    leiturasRpm[i] = 0.0;
-  }
-  indiceLeituraRpm = 0;
-  rpmMedio = 0.0; // Zera a média imediatamente para a exibição
-}
-
-// Função para configurar o hardware PCNT para o motor
-void setupEncoderPCNT() {
-  pcnt_config_t pcnt_config = {};
-  pcnt_config.pulse_gpio_num = MOTOR_ENC_A_PIN;
-  pcnt_config.ctrl_gpio_num = MOTOR_ENC_B_PIN;
-  pcnt_config.unit = MOTOR_PCNT_UNIT;
-  pcnt_config.channel = PCNT_CHANNEL_0;
-  pcnt_config.pos_mode = PCNT_COUNT_DEC;
-  pcnt_config.neg_mode = PCNT_COUNT_INC;
-  pcnt_config.lctrl_mode = PCNT_MODE_REVERSE;
-  pcnt_config.hctrl_mode = PCNT_MODE_KEEP;
-  
-  pcnt_unit_config(&pcnt_config);
-  pcnt_set_filter_value(MOTOR_PCNT_UNIT, 1023);
-  pcnt_filter_enable(MOTOR_PCNT_UNIT);
-  pcnt_counter_pause(MOTOR_PCNT_UNIT);
-  pcnt_counter_clear(MOTOR_PCNT_UNIT);
-  pcnt_counter_resume(MOTOR_PCNT_UNIT);
-}
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\nIniciando teste de motor por PWM...");
+  delay(2000); 
+  Serial.println(">>> INICIANDO TESTE DO CONTROLADOR PID + FEEDFORWARD <<<");
 
-  // Configuração dos Pinos e Hardware
-  pinMode(MOTOR_IN1_PIN, OUTPUT);
-  pinMode(MOTOR_IN2_PIN, OUTPUT);
-  ledcSetup(MOTOR_PWM_CHANNEL, 1500, 8);
-  ledcAttachPin(MOTOR_PWM_PIN, MOTOR_PWM_CHANNEL);
-  setupEncoderPCNT();
+  // Chama a função que inicializa os 4 motores (PWM, Pinos, Encoders)
+  plataforma.init();
   
-  // Garante que o motor comece parado
-  moverMotor(0); 
-
-  Serial.println("\n--- INSTRUÇÕES ---");
-  Serial.println("Digite um valor de PWM (-255 a 255) e aperte Enter.");
-  Serial.println("---------------------\n");
+  tempoInicioTeste = millis();
+  ultimoTempoPrint = millis();
 }
 
 void loop() {
-  // 1. Processa comandos do usuário via terminal
-  if (Serial.available() > 0) {
-    String comando = Serial.readStringUntil('\n');
-    comando.trim();
-    int pwmValor = comando.toInt();
+  // A função update() DEVE ser chamada em cada ciclo do loop.
+  // É ela que executa o cálculo do PID para cada motor.
+  plataforma.update();
 
-    if (pwmValor != pwmAtivo) {
-        zerarMediaMovel();
-    }
+  unsigned long tempoAtual = millis();
 
-    if (pwmValor >= -255 && pwmValor <= 255) {
-      pwmAtivo = pwmValor; // Atualiza o PWM ativo
-      
-      moverMotor(pwmAtivo);
-      Serial.printf("\n>> COMANDO: Ajustando PWM para %d <<\n\n", pwmAtivo);
-    } else {
-      Serial.println("\n>> ERRO: Valor de PWM inválido. Use de -255 a 255. <<\n");
+  // --- Máquina de Estados para a Sequência de Teste ---
+  if (tempoAtual - tempoInicioTeste > DURACAO_FASE_MS) {
+    tempoInicioTeste = tempoAtual; 
+    faseTeste = (faseTeste + 1) % 5; // Avança para a próxima fase (0 a 4)
+
+    switch (faseTeste) {
+      case 0:
+        Serial.println("\n\n>>> FASE 1: MOVER PARA FRENTE (Velocidade Média)");
+        plataforma.setSpeed(0.5, 0.0, 0.0); // 0.5 m/s para frente
+        break;
+      case 1:
+        Serial.println("\n\n>>> FASE 2: RODAR (Velocidade Baixa)");
+        plataforma.setSpeed(0.0, 0.0, 1.0); // 1.0 rad/s de rotação
+        break;
+      case 2:
+        Serial.println("\n\n>>> FASE 3: MOVER PARA TRÁS (Velocidade Alta)");
+        plataforma.setSpeed(-0.8, 0.0, 0.0); // 0.8 m/s para trás
+        break;
+      case 3:
+        Serial.println("\n\n>>> FASE 4: MOVER NA DIAGONAL");
+        plataforma.setSpeed(0.3, 0.3, 0.0); // Para frente e para a direita
+        break;
+      case 4:
+        Serial.println("\n\n>>> FASE 5: PARADO");
+        plataforma.setSpeed(0.0, 0.0, 0.0); // Parar
+        break;
     }
   }
 
-  // 2. Calcula e exibe RPM em intervalos regulares
-  if (millis() - ultimaAtualizacaoRpm >= RPM_CALC_INTERVAL) {
-    ultimaAtualizacaoRpm = millis();
-
-    // Lê o hardware
-    int16_t contagemHardwareAtual;
-    pcnt_get_counter_value(MOTOR_PCNT_UNIT, &contagemHardwareAtual);
-    
-    // Calcula as variáveis
-    int16_t deltaPulsos = contagemHardwareAtual - ultimaContagemHardware;
-    ultimaContagemHardware = contagemHardwareAtual;
-    rpmAtual = ((double)deltaPulsos / PPR_CAIXA_SAIDA) * (60000.0 / (double)RPM_CALC_INTERVAL);
-
-    // Adiciona leitura atual e calcula a média móvel
-    leiturasRpm[indiceLeituraRpm] = rpmAtual;
-    indiceLeituraRpm = (indiceLeituraRpm + 1) % NUM_LEITURAS_MEDIA;
-    double soma = 0;
-    for (int i = 0; i < NUM_LEITURAS_MEDIA; i++) {
-      soma += leiturasRpm[i];
-    }
-    rpmMedio = soma / NUM_LEITURAS_MEDIA;
-    
-    // Exibe os resultados
-    char buffer[100];
-    sprintf(buffer, "PWM Ativo: %-4d | RPM Atual: %-7.2f | RPM Médio: %.2f",
-            pwmAtivo, rpmAtual, rpmMedio);
-    Serial.println(buffer);
-    // Adiciona uma linha extra para ser lida facilmente pelo script Python
-    // Formato: "DATA:PWM_VALOR,RPM_MEDIO_VALOR"
-    Serial.printf("DATA:%d,%.2f\n", pwmAtivo, rpmMedio);
+  // --- Lógica de Impressão ---
+  // Imprime o estado dos motores no intervalo definido
+  if (tempoAtual - ultimoTempoPrint >= INTERVALO_PRINT_MS) {
+    ultimoTempoPrint = tempoAtual;
+    printMotorStatus();
   }
 }

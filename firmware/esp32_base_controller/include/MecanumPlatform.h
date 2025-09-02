@@ -11,6 +11,7 @@ public:
     MotorDC motor4;
 
     MecanumPlatform();
+    void init();
     void setup();
     void setSpeed(float linear_x, float linear_y, float angular_z);
     void update();
