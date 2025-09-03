@@ -2,41 +2,41 @@
 #define MOTORDC_H
 
 #include <Arduino.h>
+#include "driver/pcnt.h"
 #include "driver/ledc.h"
 
 class MotorDC {
 public:
-    // Construtor
-    MotorDC(int input_1_pin, int input_2_pin, int pwm_pin, ledc_channel_t pwm_channel, int pin_enca, int pin_encb);
+    volatile int64_t totalPulseCount; 
 
-    // Configura as interrupções do encoder
-    void setupEncoder(void (*isr_a)(), void (*isr_b)());
+    MotorDC(int input_1_pin, int input_2_pin, int pwm_pin, ledc_channel_t pwm_channel, 
+            int pin_enca, int pin_encb, pcnt_unit_t pcnt_unit, 
+            float m_f, float c_f, float m_b, float c_b);
 
-    // Define a velocidade alvo para o motor em radianos por segundo (unidade do ROS)
+    void init(); 
     void setTargetSpeed(float rads_per_sec);
-
-    // Atualiza o controle PID
     void updatePID();
+    float getTargetSpeedRPS();
 
-    // Posição
-    volatile long position = 0;
+    float rpm;
+    float current_speed_rps;
 
 private:
+    void setupEncoderPCNT(); 
     void setSpeedPercent(int speedPercent);
 
-    // Variáveis internas da classe
-    int INPUT_1_PIN; // Mexe para a direita
-    int INPUT_2_PIN; // Mexe para a esquerda
-    int PWM_PIN;
-    ledc_channel_t PWM_CHANNEL;
-    int PIN_ENCA;
-    int PIN_ENCB;
+    const int INPUT_1_PIN, INPUT_2_PIN, PWM_PIN;
+    const int PIN_ENCA, PIN_ENCB;
+    const ledc_channel_t PWM_CHANNEL; 
+    const pcnt_unit_t PCNT_UNIT;
 
-    float target_speed_rps = 0.0;
-    long prev_position = 0;
-    float prev_error = 0.0;
-    float integral_error = 0.0;
-    unsigned long prev_time = 0;
+    const float M_FRONT, C_FRONT, M_BACK, C_BACK;
+    
+    int16_t lastHardwareCount;
+    float target_speed_rps;
+    float prev_error;
+    float integral_error;
+    unsigned long prev_time;
 };
 
-#endif
+#endif // MOTORDC_H
