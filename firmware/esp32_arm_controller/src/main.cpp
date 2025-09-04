@@ -165,7 +165,7 @@ void setup() {
     servo1cotovelo.attach(SERVO1_PIN, 0);
     servo2ombro1.attach(SERVO2_PIN, 1);
     servo3ombro2.attach(SERVO3_PIN, 2);
-    servo4garra.attach(SERVO4_PIN, 3); // Garra desativada 
+    servo4garra.attach(SERVO4_PIN, 3); 
 
     // Configura os pinos do motor de passo
     pinMode(STEPPER_DIR_PIN, OUTPUT);
@@ -178,7 +178,7 @@ void setup() {
 
 void loop() {
     Serial.println("\n--- Iniciando Nova Sequencia ---");
-    delay(2000); // Pausa inicial
+    delay(2000); 
 
     // Passo 1: Levanta os ombros
     moverOmbrosSincronizados(80, VELOCIDADE_NORMAL);
