@@ -15,22 +15,20 @@
 #define PASSOS_POR_ROTACAO 200
 
 // --- Definições de Velocidade ---
-#define VELOCIDADE_LENTA 5
+#define VELOCIDADE_LENTA 2
 #define VELOCIDADE_NORMAL 50
 #define VELOCIDADE_RAPIDA 90
 
 // <<< NOVO: OFFSETS DE CALIBRAÇÃO PARA OS OMBROS >>>
-// Você vai descobrir e alterar estes valores durante a calibração!
-// Comece com 0 e siga as instruções no Monitor Serial.
 const int OFFSET_OMBRO_1 = 1; // Correção para o Servo 2
 const int OFFSET_OMBRO_2 = 0; // Correção para o Servo 3
 
 
 // Crie um objeto da nossa classe para cada servo
-ServoLEDC servo1;
-ServoLEDC servo2;
-ServoLEDC servo3;
-ServoLEDC servo4;
+ServoLEDC servo1cotovelo;
+ServoLEDC servo2ombro1;
+ServoLEDC servo3ombro2;
+ServoLEDC servo4garra;
 
 
 // <<< NOVA FUNÇÃO: Move os dois servos do ombro de forma sincronizada >>>
@@ -40,8 +38,8 @@ void moverOmbrosSincronizados(int angulo, int velocidade) {
     int anguloFinalOmbro2 = constrain(angulo + OFFSET_OMBRO_2, 0, 180);
 
     // Manda o comando para os dois servos ao mesmo tempo
-    servo2.writeSlow(anguloFinalOmbro1, velocidade);
-    servo3.writeSlow(anguloFinalOmbro2, velocidade);
+    servo2ombro1.writeSlow(anguloFinalOmbro1, velocidade);
+    servo3ombro2.writeSlow(anguloFinalOmbro2, velocidade);
 }
 
 
@@ -49,13 +47,13 @@ void moverOmbrosSincronizados(int angulo, int velocidade) {
 void printServoStatus() {
     Serial.print("Angulos Atuais -> ");
     Serial.print("S1 (Cotovelo): ");
-    Serial.print(servo1.read());
+    Serial.print(servo1cotovelo.read());
     Serial.print(" | S2 (Ombro1): ");
-    Serial.print(servo2.read());
+    Serial.print(servo2ombro1.read());
     Serial.print(" | S3 (Ombro2): ");
-    Serial.print(servo3.read());
+    Serial.print(servo3ombro2.read());
     Serial.print(" | S4 (Garra): ");
-    Serial.println(servo4.read());
+    Serial.println(servo4garra.read());
     Serial.println("-------------------------------------------------");
 }
 
@@ -92,8 +90,6 @@ void testaMotorDePasso() {
 }
 
 
-
-// <<< NOVA FUNÇÃO: Rotina para calibrar os servos do ombro >>>
 void calibrarOmbros() {
     int calibOffset1 = 0;
     int calibOffset2 = 0;
@@ -109,8 +105,8 @@ void calibrarOmbros() {
     Serial.println("----------------------------------------");
 
     // Posiciona os servos no centro para a calibração
-    servo2.write(90);
-    servo3.write(90);
+    servo2ombro1.write(90);
+    servo3ombro2.write(90);
 
     // Loop infinito de calibração
     while(true) {
@@ -121,12 +117,12 @@ void calibrarOmbros() {
 
             if (servoID == 'a') {
                 calibOffset1 += valor;
-                servo2.write(90 + calibOffset1);
+                servo2ombro1.write(90 + calibOffset1);
                 Serial.print("Novo Offset Ombro 1 (Servo 2): ");
                 Serial.println(calibOffset1);
             } else if (servoID == 'b') {
                 calibOffset2 += valor;
-                servo3.write(90 + calibOffset2);
+                servo3ombro2.write(90 + calibOffset2);
                 Serial.print("Novo Offset Ombro 2 (Servo 3): ");
                 Serial.println(calibOffset2);
             }
@@ -141,48 +137,37 @@ void setup() {
     Serial.println("--- Sistema do Braco Robotico Iniciado ---");
 
     // Configuração dos Servos
-    servo1.attach(SERVO1_PIN, 0);
-    servo2.attach(SERVO2_PIN, 1);
-    servo3.attach(SERVO3_PIN, 2);
-    // servo4.attach(SERVO4_PIN, 3); // Garra desativada 
+    servo1cotovelo.attach(SERVO1_PIN, 0);
+    servo2ombro1.attach(SERVO2_PIN, 1);
+    servo3ombro2.attach(SERVO3_PIN, 2);
+    servo4garra.attach(SERVO4_PIN, 3); // Garra desativada 
 
     // Configura os pinos do motor de passo
     pinMode(STEPPER_DIR_PIN, OUTPUT);
     pinMode(STEPPER_STEP_PIN, OUTPUT);
     delay(1000);
 
-    // <<< MODO DE CALIBRAÇÃO >>>
-    // Descomente a linha abaixo APENAS quando quiser calibrar os servos.
-    // Depois de encontrar os valores, comente a linha novamente.
+    // <<< MODO DE CALIBRAÇÃO >>> cotovelo
     // calibrarOmbros();
 }
 
 void loop() {
     Serial.println("\n--- Iniciando Nova Sequencia ---");
 
-    Serial.println("Movendo ombros para 0 graus...");
-    moverOmbrosSincronizados(0, VELOCIDADE_LENTA);
-    delay(1000);
+    moverOmbrosSincronizados(80, VELOCIDADE_LENTA);
+    delay(3000);
 
-    Serial.println("Movendo ombros para 90 graus...");
-    moverOmbrosSincronizados(90, VELOCIDADE_LENTA);
-    delay(1000);
+    servo1cotovelo.writeSlow(90, VELOCIDADE_LENTA);
+    delay(3000);
 
-    Serial.println("Movendo cotovelo para 20 graus...");
-    servo1.writeSlow(20, VELOCIDADE_LENTA);
-    delay(1000);
+    servo4garra.writeSlow(0, VELOCIDADE_LENTA);
+    delay(3000);
 
-    Serial.println("Movendo cotovelo para 90 graus...");
-    servo1.writeSlow(90, VELOCIDADE_LENTA);
-    delay(1000);
+    servo1cotovelo.writeSlow(50, VELOCIDADE_LENTA);
+    delay(3000);
 
-    Serial.println("Movendo cotovelo de volta para 20 graus...");
-    servo1.writeSlow(20, VELOCIDADE_LENTA);
-    delay(1000);
+    servo4garra.writeSlow(90, VELOCIDADE_LENTA);
+    delay(3000);
 
-    Serial.println("Retornando ombros para a posicao inicial (0 graus)...");
-    moverOmbrosSincronizados(0, VELOCIDADE_LENTA);
-    delay(2000); 
-
-   testaMotorDePasso(); 
+    testaMotorDePasso(); 
 }
