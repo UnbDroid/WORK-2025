@@ -42,6 +42,31 @@ void moverOmbrosSincronizados(int angulo, int velocidade) {
     servo3ombro2.writeSlow(anguloFinalOmbro2, velocidade);
 }
 
+// Função para mover o motor de passo em um ângulo específico.
+void moverAngulo(float angulo) {
+    long passosParaMover = (PASSOS_POR_ROTACAO / 360.0) * angulo;
+
+    if (angulo >= 0) {
+        digitalWrite(STEPPER_DIR_PIN, HIGH); 
+        Serial.print("Motor: Movendo ");
+        Serial.print(angulo);
+        Serial.println(" graus no sentido HORÁRIO...");
+    } else {
+        digitalWrite(STEPPER_DIR_PIN, LOW);
+        Serial.print("Motor: Movendo ");
+        Serial.print(abs(angulo));
+        Serial.println(" graus no sentido ANTI-HORÁRIO...");
+    }
+
+    for (long i = 0; i < abs(passosParaMover); i++) {
+        digitalWrite(STEPPER_STEP_PIN, HIGH);
+        delayMicroseconds(800);
+        digitalWrite(STEPPER_STEP_PIN, LOW);
+        delayMicroseconds(800);
+    }
+    Serial.println("Motor: Movimento concluído.");
+}
+
 
 // Função auxiliar para imprimir o status de todos os servos
 void printServoStatus() {
@@ -153,21 +178,32 @@ void setup() {
 
 void loop() {
     Serial.println("\n--- Iniciando Nova Sequencia ---");
+    delay(2000); // Pausa inicial
 
-    moverOmbrosSincronizados(80, VELOCIDADE_LENTA);
+    // Passo 1: Levanta os ombros
+    moverOmbrosSincronizados(80, VELOCIDADE_NORMAL);
     delay(3000);
 
-    servo1cotovelo.writeSlow(90, VELOCIDADE_LENTA);
+    // Passo 2: Estica o cotovelo
+    servo1cotovelo.writeSlow(90, VELOCIDADE_NORMAL);
     delay(3000);
 
-    servo4garra.writeSlow(0, VELOCIDADE_LENTA);
+    // Passo 3: Gira a base (motor de passo) 180 graus no sentido horário
+    moverAngulo(180);
     delay(3000);
 
-    servo1cotovelo.writeSlow(50, VELOCIDADE_LENTA);
+    // Passo 4: Abre a garra
+    servo4garra.writeSlow(90, VELOCIDADE_NORMAL);
     delay(3000);
 
-    servo4garra.writeSlow(90, VELOCIDADE_LENTA);
+    // Passo 5: Gira a base (motor de passo) 90 graus no sentido ANTI-horário
+    // AQUI você pode escolher outro valor
+    moverAngulo(-90);
     delay(3000);
 
-    testaMotorDePasso(); 
+    // Passo 6: Fecha a garra
+    servo4garra.writeSlow(0, VELOCIDADE_NORMAL);
+    delay(3000);
+
+    Serial.println("\n--- FIM DA SEQUENCIA ---");
 }
